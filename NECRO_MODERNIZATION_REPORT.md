@@ -65,6 +65,16 @@ back to Ruby 2.0:
 - Updated `appveyor.yml` similarly (Windows Ruby 3.2–3.4 instead of
   2.0–2.6), and removed a `gem install bundler -v '< 2.0'` pin that no
   longer makes sense.
+- **Review fix:** the first version of this bump broke
+  `continuous-integration/appveyor/pr`. AppVeyor only pre-installs a
+  given Ruby version on specific build-worker images, and Ruby 3.2/3.3/3.4
+  aren't present on the account's default (older) image — so
+  `C:\Ruby32-x64\bin` etc. didn't exist and `bundle`/`ruby` were never on
+  `PATH`. Fixed by pinning `image: Visual Studio 2022` in `appveyor.yml`,
+  the current AppVeyor image with those Ruby versions preinstalled. This
+  is Windows/AppVeyor-specific — the GitHub Actions matrix was unaffected
+  since `ruby/setup-ruby` installs the requested Ruby itself rather than
+  relying on a preinstalled image.
 
 No source in `lib/` needed a behavioral compatibility fix for Ruby 4.0.6
 itself, but several latent bugs turned up while writing tests for full
