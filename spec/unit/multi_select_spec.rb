@@ -344,7 +344,8 @@ RSpec.describe TTY::Prompt do
                     hint: "Press #{up_down} arrow to move, Space/Ctrl+A|R to select " \
                           "(all|rev) and Enter to finish") +
       output_helper("Select drinks?", choices, "wine", %w[wine],
-                    hint: "Press #{up_down} arrow to move, Space/Ctrl+A|R to select " \
+                    hint: "Press #{up_down} arrow to move, " \
+                          "Space/Ctrl+A|R to select " \
                           "(all|rev) and Enter to finish") +
       exit_message("Select drinks?", %w[wine])
 

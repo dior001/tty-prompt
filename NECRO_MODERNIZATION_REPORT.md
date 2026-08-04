@@ -240,6 +240,17 @@ Notable non-mechanical decisions baked into `.rubocop.yml`:
   is within 80 columns; re-verified with
   `bundle exec rubocop examples/ask.rb` (no offenses) and the full suite
   (538 examples, 0 failures, 100% coverage).
+- **Review fix:** `spec/unit/multi_select_spec.rb:347` was flagged for
+  `Layout/LineLength` (87/80) — same situation as the `examples/ask.rb`
+  fix above: `spec/**/*` is deliberately excluded from this cop in
+  `.rubocop.yml` (a pre-existing choice predating this PR, not something
+  this modernization pass introduced), so it never showed up in
+  `bundle exec rubocop`, but a reviewer flagged the line directly.
+  Wrapped the `hint:` string literal's concatenation across an extra
+  line so every fragment is within 80 columns; the concatenated string
+  value is unchanged. Re-verified with `bundle exec rubocop` (117 files,
+  no offenses) and the full suite (538 examples, 0 failures, 100%
+  coverage).
 
 ## 6. Security
 

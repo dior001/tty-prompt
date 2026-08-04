@@ -20,6 +20,7 @@
   "coverage_after": 100.0,
   "review_fixes": [
     "appveyor.yml: pinned image: Visual Studio 2022 so the Ruby 3.2/3.3/3.4 matrix entries actually resolve on AppVeyor's Windows build workers (the default account image predates those Ruby installs, which was failing continuous-integration/appveyor/pr); no Ruby version was added, dropped, or narrowed",
-    "examples/ask.rb:10: Layout/LineLength (87/80) - reformatted the prompt.ask(...) keyword arguments one per line; examples/**/* is excluded from the project's own rubocop run but a reviewer's tooling checked the file directly, which is standard RuboCop behavior for an explicitly-targeted path"
+    "examples/ask.rb:10: Layout/LineLength (87/80) - reformatted the prompt.ask(...) keyword arguments one per line; examples/**/* is excluded from the project's own rubocop run but a reviewer's tooling checked the file directly, which is standard RuboCop behavior for an explicitly-targeted path",
+    "spec/unit/multi_select_spec.rb:347: Layout/LineLength (87/80) - wrapped the hint: string concatenation across an extra line so every fragment is <=80 columns, concatenated value unchanged; spec/**/* is deliberately excluded from this cop in .rubocop.yml (pre-existing, not introduced by this PR) but the reviewer flagged the line directly"
   ]
 }
