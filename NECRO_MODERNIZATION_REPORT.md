@@ -57,11 +57,16 @@ back to Ruby 2.0:
   floor aligned with its tooling avoids a `bundle install` mismatch for
   anyone developing against this gemspec.
 - Rewrote the GitHub Actions matrix: dropped Ruby 2.0–3.1 and JRuby
-  9.2/9.3 (long past this floor), kept `ruby-head`/`jruby-9.4`/
-  `jruby-head`/`truffleruby-head` as `continue-on-error` canaries, and
-  added `3.2`, `3.3`, `3.4`, and `4.0.6` (coverage now runs on 4.0.6
-  instead of the old 2.7 job). Added dedicated `lint` (RuboCop) and
-  `audit` (bundler-audit) jobs.
+  9.2/9.3 (long past this floor), kept `ruby-head`/`jruby-head`/
+  `truffleruby-head` as `continue-on-error` canaries, and added `3.2`,
+  `3.3`, `3.4`, and `4.0.6` (coverage now runs on 4.0.6 instead of the
+  old 2.7 job). Added dedicated `lint` (RuboCop) and `audit`
+  (bundler-audit) jobs. **Correction (see §5 review fix):** `jruby-9.4`
+  is *not* `continue-on-error` — `continue-on-error` only matches matrix
+  entries ending in `head` — so it's a required job, not a canary. It
+  matters because JRuby 9.4 only implements Ruby 3.1 syntax, one minor
+  below this gem's declared `>= 3.2.0` floor, which is exactly what the
+  §5 review fix below had to account for.
 - Updated `appveyor.yml` similarly (Windows Ruby 3.2–3.4 instead of
   2.0–2.6), and removed a `gem install bundler -v '< 2.0'` pin that no
   longer makes sense.
@@ -259,6 +264,31 @@ Notable non-mechanical decisions baked into `.rubocop.yml`:
   file with explicit `.call(...)`. Re-verified with `bundle exec rubocop`
   (117 files, no offenses) and the full suite (538 examples, 0 failures,
   100% coverage).
+- **Review fix:** `lib/tty/prompt.rb:402` was flagged with
+  `Lint/Syntax: unexpected token tRPAREN`. Root cause: several methods
+  (`ask`, `keypress`, `multiline`, `mask`, `select`, `multi_select`,
+  `enum_select`, `expand`, `slider`, `say`, `suggest`, `collect`, and the
+  calls inside them) used *bare* anonymous `*`/`**` argument forwarding
+  at call sites (e.g. `invoke_question(Question, message, **, &)`). Bare
+  `*`/`**` forwarding at a call site is a Ruby **3.2** addition; Ruby 3.1
+  only supports bare `&` forwarding. As corrected above, `jruby-9.4` —
+  which only implements Ruby 3.1 syntax — is a required (non-canary) job
+  in this project's CI matrix, so the file must parse there too, and it
+  didn't: confirmed by parsing `lib/tty/prompt.rb` with the `parser` gem's
+  `Parser::Ruby31` grammar, which reproduced the exact `unexpected token`
+  failure. Fixed by naming every anonymous `*`/`**` parameter and its
+  forwarded call-site usage (`*args`, `**options`) throughout
+  `lib/tty/prompt.rb`, while leaving anonymous `&` block forwarding alone
+  (it's a Ruby 3.1 feature and parses fine on the floor). Re-verified the
+  whole file parses under `Parser::Ruby31` and under a real Ruby 3.1
+  grammar check with no errors. Since the gemspec's `required_ruby_version
+  >= 3.2.0` makes RuboCop infer `TargetRubyVersion: 3.2` and its
+  `Style/ArgumentsForwarding` cop would otherwise keep steering this back
+  to the anonymous (3.2-only) form, added
+  `Style/ArgumentsForwarding: UseAnonymousForwarding: false` to
+  `.rubocop.yml` with a comment explaining the `jruby-9.4` constraint.
+  Re-verified with `bundle exec rubocop` (117 files, no offenses) and the
+  full suite (538 examples, 0 failures, 100% coverage).
 
 ## 6. Security
 

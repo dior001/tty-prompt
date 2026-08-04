@@ -198,8 +198,8 @@ module TTY
     # @return [TTY::Prompt::Question]
     #
     # @api public
-    def ask(message = "", **, &)
-      invoke_question(Question, message, **, &)
+    def ask(message = "", **options, &)
+      invoke_question(Question, message, **options, &)
     end
 
     # Ask a question with a keypress answer
@@ -207,8 +207,8 @@ module TTY
     # @see #ask
     #
     # @api public
-    def keypress(message = "", **, &)
-      invoke_question(Keypress, message, **, &)
+    def keypress(message = "", **options, &)
+      invoke_question(Keypress, message, **options, &)
     end
 
     # Ask a question with a multiline answer
@@ -219,8 +219,8 @@ module TTY
     # @return [Array[String]]
     #
     # @api public
-    def multiline(message = "", **, &)
-      invoke_question(Multiline, message, **, &)
+    def multiline(message = "", **options, &)
+      invoke_question(Multiline, message, **options, &)
     end
 
     # Invoke a list type of prompt
@@ -258,8 +258,8 @@ module TTY
     # @return [TTY::Prompt::MaskQuestion]
     #
     # @api public
-    def mask(message = "", **, &)
-      invoke_question(MaskQuestion, message, **, &)
+    def mask(message = "", **options, &)
+      invoke_question(MaskQuestion, message, **options, &)
     end
 
     # Ask a question with a list of options
@@ -282,8 +282,8 @@ module TTY
     #   the choices to select from
     #
     # @api public
-    def select(question, *, &)
-      invoke_select(List, question, *, &)
+    def select(question, *args, &)
+      invoke_select(List, question, *args, &)
     end
 
     # Ask a question with multiple attributes activated
@@ -302,8 +302,8 @@ module TTY
     # @return [String]
     #
     # @api public
-    def multi_select(question, *, &)
-      invoke_select(MultiList, question, *, &)
+    def multi_select(question, *args, &)
+      invoke_select(MultiList, question, *args, &)
     end
 
     # Ask a question with indexed list
@@ -322,8 +322,8 @@ module TTY
     # @return [String]
     #
     # @api public
-    def enum_select(question, *, &)
-      invoke_select(EnumList, question, *, &)
+    def enum_select(question, *args, &)
+      invoke_select(EnumList, question, *args, &)
     end
 
     # A shortcut method to ask the user positive question and return
@@ -379,8 +379,8 @@ module TTY
     #   the user specified value
     #
     # @api public
-    def expand(message, *, &)
-      invoke_select(Expander, message, *, &)
+    def expand(message, *args, &)
+      invoke_select(Expander, message, *args, &)
     end
 
     # Ask a question with a range slider
@@ -399,8 +399,8 @@ module TTY
     # @return [String]
     #
     # @api public
-    def slider(question, choices = nil, **, &)
-      slider = Slider.new(self, **)
+    def slider(question, choices = nil, **options, &)
+      slider = Slider.new(self, **options)
       slider.(question, choices, &)
     end
 
@@ -415,11 +415,11 @@ module TTY
     # @return [String]
     #
     # @api public
-    def say(message = "", **)
+    def say(message = "", **options)
       message = message.to_s
       return if message.empty?
 
-      statement = Statement.new(self, **)
+      statement = Statement.new(self, **options)
       statement.(message)
     end
 
@@ -515,8 +515,8 @@ module TTY
     # @return [String]
     #
     # @api public
-    def suggest(message, possibilities, **)
-      suggestion = Suggestion.new(**)
+    def suggest(message, possibilities, **options)
+      suggestion = Suggestion.new(**options)
       say(suggestion.suggest(message, possibilities))
     end
 
@@ -531,8 +531,8 @@ module TTY
     #   the collection of answers
     #
     # @api public
-    def collect(**, &)
-      collector = AnswersCollector.new(self, **)
+    def collect(**options, &)
+      collector = AnswersCollector.new(self, **options)
       collector.(&)
     end
 

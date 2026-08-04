@@ -8,6 +8,12 @@ AllCops:
 Gemspec/DevelopmentDependencies:
   Enabled: false
 
+Style/ArgumentsForwarding:
+  # The CI matrix still runs jruby-9.4, which only implements Ruby 3.1
+  # syntax, so bare anonymous `*`/`**` forwarding (a Ruby 3.2 addition)
+  # is off the table even though required_ruby_version allows it.
+  UseAnonymousForwarding: false
+
 Layout/BlockAlignment:
   Exclude:
     - "spec/**/*"
