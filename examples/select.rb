@@ -11,7 +11,7 @@ prompt.on(:keypress) do |event|
   prompt.trigger(:keyup) if event.value == "k"
 end
 
-prompt.on(:keyescape) do |event|
+prompt.on(:keyescape) do |_event|
   exit(1)
 end
 

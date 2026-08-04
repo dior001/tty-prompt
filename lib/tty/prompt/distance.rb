@@ -13,7 +13,7 @@ module TTY
         cols      = second.to_s.length
 
         0.upto(rows) do |index|
-          distances << [index] + [0] * cols
+          distances << ([index] + ([0] * cols))
         end
         distances[0] = 0.upto(cols).to_a
 
@@ -29,17 +29,18 @@ module TTY
               distances[first_index - 1][second_index - 1]  # substitution
             ].min + cost
 
-            if first_index > 1 && second_index > 1
-              first_previous_char = first[first_index - 2]
-              second_previous_char = second[second_index - 2]
-              if first_char == second_previous_char && second_char == first_previous_char
-                distances[first_index][second_index] = [
-                  distances[first_index][second_index],
-                  distances[first_index - 2][second_index - 2] + 1 # transposition
-                ].min
-              end
-            end
+            next unless first_index > 1 && second_index > 1
 
+            first_previous_char = first[first_index - 2]
+            second_previous_char = second[second_index - 2]
+            transposed = first_char == second_previous_char &&
+                         second_char == first_previous_char
+            next unless transposed
+
+            distances[first_index][second_index] = [
+              distances[first_index][second_index],
+              distances[first_index - 2][second_index - 2] + 1 # transposition
+            ].min
           end
         end
         distances[rows][cols]

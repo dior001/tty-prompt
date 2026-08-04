@@ -6,7 +6,7 @@ RSpec.describe TTY::Prompt::Timer do
     yielded = []
 
     timer.while_remaining do |remaining|
-      expect(remaining).to be_within(0.1).of(timer.duration - yielded.size * 0.01)
+      expect(remaining).to be_within(0.1).of(timer.duration - (yielded.size * 0.01))
       yielded << remaining
       sleep(0.01)
     end

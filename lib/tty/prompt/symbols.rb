@@ -70,6 +70,12 @@ module TTY
         spade: "♠"
       }.freeze
 
+      # The collection of symbols to use, Unicode by default or the
+      # Windows-compatible set when running on Windows
+      #
+      # @return [Hash]
+      #
+      # @api public
       def symbols
         @symbols ||= windows? ? WIN_KEYS : KEYS
       end

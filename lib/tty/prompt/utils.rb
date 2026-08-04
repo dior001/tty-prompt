@@ -1,10 +1,14 @@
 # frozen_string_literal: true
 
 module TTY
+  # A collection of small helper functions shared across TTY::Prompt
+  # classes, e.g. option extraction and blank checks.
+  #
+  # @api private
   module Utils
     module_function
 
-    BLANK_REGEX = /\A[[:space:]]*\z/o.freeze
+    BLANK_REGEX = /\A[[:space:]]*\z/o
 
     # Extract options hash from array argument
     #
@@ -16,6 +20,13 @@ module TTY
       options.respond_to?(:to_hash) ? options.to_hash.dup : {}
     end
 
+    # Extract and remove options hash from array argument, mutating args
+    #
+    # @param [Array[Object]] args
+    #
+    # @return [Hash]
+    #
+    # @api public
     def extract_options!(args)
       args.last.respond_to?(:to_hash) ? args.pop : {}
     end

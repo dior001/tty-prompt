@@ -37,14 +37,27 @@ module TTY
         @default_key  = false
       end
 
+      # Check if the help menu is expanded
+      #
+      # @return [Boolean]
+      #
+      # @api private
       def expanded?
         @status == :expanded
       end
 
+      # Check if the help menu is collapsed
+      #
+      # @return [Boolean]
+      #
+      # @api private
       def collapsed?
         @status == :collapsed
       end
 
+      # Expand the help menu
+      #
+      # @api private
       def expand
         @status = :expanded
       end
@@ -85,9 +98,9 @@ module TTY
         end
 
         @selected = select_choice(@input)
-        if @selected && !@default_key && collapsed?
-          @hint = @selected.name
-        end
+        return unless @selected && !@default_key && collapsed?
+
+        @hint = @selected.name
       end
 
       # Select choice by given key
@@ -119,11 +132,11 @@ module TTY
       #
       # @api public
       def choice(value, &block)
-        if block
-          @choices << value.update(value: block)
-        else
-          @choices << value
-        end
+        @choices << if block
+                      value.update(value: block)
+                    else
+                      value
+                    end
       end
 
       # Add multiple choices
@@ -142,7 +155,7 @@ module TTY
       def call(message, possibilities, &block)
         choices(possibilities)
         @message = message
-        block.call(self) if block
+        block&.(self)
         setup_defaults
         choice(HELP_CHOICE)
         @prompt.subscribe(self) do
@@ -211,10 +224,9 @@ module TTY
       #
       # @api private
       def render_hint
-        "\n" + @prompt.decorate(">> ", @active_color) +
-          @hint +
-          @prompt.cursor.prev_line +
-          @prompt.cursor.forward(@prompt.strip(render_header).size)
+        arrow = @prompt.decorate(">> ", @active_color)
+        rewind = @prompt.cursor.forward(@prompt.strip(render_header).size)
+        "\n#{arrow}#{@hint}#{@prompt.cursor.prev_line}#{rewind}"
       end
 
       # Render question with menu
@@ -236,17 +248,15 @@ module TTY
       end
 
       def load_auto_hint
-        if @hint.nil? && collapsed?
-          if @selected
-            @hint = @selected.name
-          else
-            if @input.empty?
-              @hint = @choices[@default - 1].name
-            else
-              @hint = "invalid option"
-            end
-          end
-        end
+        return unless @hint.nil? && collapsed?
+
+        @hint = if @selected
+                  @selected.name
+                elsif @input.empty?
+                  @choices[@default - 1].name
+                else
+                  "invalid option"
+                end
       end
 
       def render_footer
@@ -286,7 +296,7 @@ module TTY
           if @selected && @selected.key == choice.key
             chosen = @prompt.decorate(chosen, @active_color)
           end
-          output << "  " + chosen + "\n"
+          output << "  #{chosen}\n"
         end
         output.join
       end
@@ -304,7 +314,8 @@ module TTY
             next
           end
           if choice.key.length != 1
-            errors << "Choice key `#{choice.key}` is more than one character long."
+            errors << "Choice key `#{choice.key}` is more than one " \
+                      "character long."
           end
           if choice.key.to_s == "h"
             errors << "Choice key `#{choice.key}` is reserved for help menu."
@@ -314,7 +325,7 @@ module TTY
           end
           keys << choice.key if choice.key
         end
-        errors.each { |err| raise ConfigurationError, err }
+        raise ConfigurationError, errors.first if errors.any?
       end
     end # Expander
   end # Prompt

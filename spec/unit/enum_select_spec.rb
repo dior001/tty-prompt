@@ -34,7 +34,7 @@ RSpec.describe TTY::Prompt do
       out << "\e[31m>>\e[0m #{error}"
       out << "\e[A\e[1G\e[#{choice.size}C"
     end
-    out << "\e[2K\e[1G\e[1A" * (choices.count + 1)
+    out << ("\e[2K\e[1G\e[1A" * (choices.count + 1))
     out << "\e[2K\e[1G\e[J"
     out.join
   end
@@ -522,13 +522,61 @@ RSpec.describe TTY::Prompt do
     ].join)
   end
 
+  it "moves to the previous page when left is pressed" do
+    choices = %w[A B C D E F]
+    prompt.input << "\t" << "\e[D" << "\n"
+    prompt.input.rewind
+    value = prompt.enum_select("What letter?") do |menu|
+              menu.default 1
+              menu.per_page 3
+              menu.choices choices
+            end
+    expect(value).to eq("A")
+    expect(prompt.output.string).to include("  \e[32m1) A\e[0m\n  2) B\n  3) C")
+  end
+
+  it "cycles to the last page moving left when configured to do so" do
+    choices = %w[A B C D E F]
+    prompt.input << "\e[D" << "\n"
+    prompt.input.rewind
+    value = prompt.enum_select("What letter?", cycle: true) do |menu|
+              menu.default 1
+              menu.per_page 3
+              menu.choices choices
+            end
+    expect(value).to eq("A")
+    expect(prompt.output.string).to include("4) D\n  5) E\n  6) F")
+  end
+
+  it "sets choice value to a block and executes it" do
+    prompt.input << "1\n"
+    prompt.input.rewind
+    value = prompt.enum_select("What letter?") do |menu|
+              menu.choice("a") { "Good choice!" }
+              menu.choice "b"
+            end
+    expect(value).to eq("Good choice!")
+  end
+
+  it "sets custom page help text through the DSL" do
+    choices = %w[A B C D E F]
+    prompt.input << "\n"
+    prompt.input.rewind
+    prompt.enum_select("What letter?") do |menu|
+      menu.per_page 3
+      menu.page_help "(custom paging help)"
+      menu.choices choices
+    end
+    expect(prompt.output.string).to include("(custom paging help)")
+  end
+
   context "with :disabled choice" do
     it "fails when active item is also disabled" do
       choices = [{name: "A", disabled: true}, "B", "C", "D", "E"]
       expect {
         prompt.enum_select("What letter?", choices, default: 1)
       }.to raise_error(TTY::Prompt::ConfigurationError,
-        /default index 1 matches disabled choice item/)
+                       /default index 1 matches disabled choice item/)
     end
 
     it "finds first non-disabled index" do

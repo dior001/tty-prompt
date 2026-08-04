@@ -10,13 +10,16 @@ module TTY
       #
       # @examples
       #   Choice.from(:foo)
-      #   # => <TTY::Prompt::Choice @key=nil @name="foo" @value="foo" @disabled=false>
+      #   # => <TTY::Prompt::Choice @key=nil @name="foo" @value="foo"
+      #   #     @disabled=false>
       #
       #   Choice.from([:foo, 1])
-      #   # => <TTY::Prompt::Choice @key=nil @name="foo" @value=1 @disabled=false>
+      #   # => <TTY::Prompt::Choice @key=nil @name="foo" @value=1
+      #   #     @disabled=false>
       #
       #   Choice.from({name: :foo, value: 1, key: "f"}
-      #   # => <TTY::Prompt::Choice @key="f" @name="foo" @value=1 @disabled=false>
+      #   # => <TTY::Prompt::Choice @key="f" @name="foo" @value=1
+      #   #     @disabled=false>
       #
       # @param [Object] val
       #   the value to be converted
@@ -115,7 +118,7 @@ module TTY
       def value
         case @value
         when Proc
-          @value.call
+          @value.()
         else
           @value
         end

@@ -14,10 +14,10 @@ module TTY
     # @api private
     class List
       # Allowed keys for filter, along with backspace and canc.
-      FILTER_KEYS_MATCHER = /\A([[:alnum:]]|[[:punct:]])\Z/.freeze
+      FILTER_KEYS_MATCHER = /\A([[:alnum:]]|[[:punct:]])\Z/
 
       # Checks type of default parameter to be integer
-      INTEGER_MATCHER = /\A\d+\Z/.freeze
+      INTEGER_MATCHER = /\A\d+\Z/
 
       # Create instance of TTY::Prompt::List menu.
       #
@@ -36,28 +36,9 @@ module TTY
       def initialize(prompt, **options)
         check_options_consistency(options)
 
-        @prompt       = prompt
-        @prefix       = options.fetch(:prefix) { @prompt.prefix }
-        @enum         = options.fetch(:enum) { nil }
-        @default      = Array(options[:default])
-        @choices      = Choices.new
-        @active_color = options.fetch(:active_color) { @prompt.active_color }
-        @help_color   = options.fetch(:help_color) { @prompt.help_color }
-        @cycle        = options.fetch(:cycle) { false }
-        @filterable   = options.fetch(:filter) { false }
-        @symbols      = @prompt.symbols.merge(options.fetch(:symbols, {}))
-        @quiet        = options.fetch(:quiet) { @prompt.quiet }
-        @filter       = []
-        @filter_cache = {}
-        @help         = options[:help]
-        @show_help    = options.fetch(:show_help) { :start }
-        @first_render = true
-        @done         = false
-        @per_page     = options[:per_page]
-        @paginator    = Paginator.new
-        @block_paginator = BlockPaginator.new
-        @by_page      = false
-        @paging_changed = false
+        @prompt = prompt
+        assign_options(options)
+        assign_defaults
       end
 
       # Change symbols used by this prompt
@@ -97,11 +78,9 @@ module TTY
             @block_paginator.reset!
             @block_paginator.start_index = @paginator.start_index
           end
-        else
-          if @block_paginator.start_index
-            @paginator.reset!
-            @paginator.start_index = @block_paginator.start_index
-          end
+        elsif @block_paginator.start_index
+          @paginator.reset!
+          @paginator.start_index = @block_paginator.start_index
         end
       end
 
@@ -112,8 +91,13 @@ module TTY
         @per_page = value
       end
 
+      # Number of items to display per page
+      #
+      # @return [Integer]
+      #
+      # @api public
       def page_size
-        (@per_page || Paginator::DEFAULT_PAGE_SIZE)
+        @per_page || Paginator::DEFAULT_PAGE_SIZE
       end
 
       # Check if list is paginated
@@ -136,7 +120,7 @@ module TTY
       def help(value = (not_set = true))
         return @help if !@help.nil? && not_set
 
-        @help = (@help.nil? && !not_set) ? value : default_help
+        @help = @help.nil? && !not_set ? value : default_help
       end
 
       # Change when help is displayed
@@ -154,8 +138,8 @@ module TTY
       #
       # @api private
       def arrows_help
-        up_down = @symbols[:arrow_up] + "/" + @symbols[:arrow_down]
-        left_right = @symbols[:arrow_left] + "/" + @symbols[:arrow_right]
+        up_down = "#{@symbols[:arrow_up]}/#{@symbols[:arrow_down]}"
+        left_right = "#{@symbols[:arrow_left]}/#{@symbols[:arrow_right]}"
 
         arrows = [up_down]
         arrows << "/" if paginated?
@@ -200,11 +184,11 @@ module TTY
       # @api public
       def choice(*value, &block)
         @filter_cache = {}
-        if block
-          @choices << (value << block)
-        else
-          @choices << value
-        end
+        @choices << if block
+                      (value << block)
+                    else
+                      value
+                    end
       end
 
       # Add multiple choices, or return them.
@@ -239,7 +223,7 @@ module TTY
       def call(question, possibilities, &block)
         choices(possibilities)
         @question = question
-        block.call(self) if block
+        block&.(self)
         setup_defaults
         @prompt.subscribe(self) do
           render
@@ -253,6 +237,12 @@ module TTY
         !@enum.nil?
       end
 
+      # Handle a numeric key press by activating the matching choice
+      #
+      # @param [TTY::Reader::KeyEvent] event
+      #   the key event
+      #
+      # @api private
       def keynum(event)
         return unless enumerate?
 
@@ -263,16 +253,33 @@ module TTY
         @active = value
       end
 
+      # Handle the enter, return or space key by finishing the
+      # selection
+      #
+      # @api private
       def keyenter(*)
         @done = true unless choices.empty?
       end
       alias keyreturn keyenter
       alias keyspace keyenter
 
+      # Find the first index within the searchable collection that
+      # points to a non-disabled choice
+      #
+      # @param [Enumerable[Integer]] searchable
+      #   the indexes to search through
+      #
+      # @return [Integer, nil]
+      #
+      # @api private
       def search_choice_in(searchable)
         searchable.find { |i| !choices[i - 1].disabled? }
       end
 
+      # Handle the up arrow key by activating the previous
+      # non-disabled choice
+      #
+      # @api private
       def keyup(*)
         searchable  = (@active - 1).downto(1).to_a
         prev_active = search_choice_in(searchable)
@@ -290,6 +297,10 @@ module TTY
         @by_page = false
       end
 
+      # Handle the down arrow or tab key by activating the next
+      # non-disabled choice
+      #
+      # @api private
       def keydown(*)
         searchable  = ((@active + 1)..choices.length)
         next_active = search_choice_in(searchable)
@@ -321,7 +332,7 @@ module TTY
           current   = @active % page_size
           remaining = choices_size % page_size
 
-          if current.zero? || (remaining > 0 && current > remaining)
+          if current.zero? || (remaining.positive? && current > remaining)
             searchable = choices_size.downto(0).to_a
             @active = search_choice_in(searchable)
           elsif @cycle
@@ -335,8 +346,13 @@ module TTY
       end
       alias keypage_down keyright
 
+      # Moves all choices page by page keeping the current selected item
+      # at the same level on each page, in the direction opposite to
+      # {#keyright}.
+      #
+      # @api private
       def keyleft(*)
-        if (@active - page_size) > 0
+        if (@active - page_size).positive?
           searchable = ((@active - page_size)..choices.size)
           @active = search_choice_in(searchable)
         elsif @cycle
@@ -348,15 +364,25 @@ module TTY
       end
       alias keypage_up keyleft
 
+      # Handle a filterable character key press by appending it to the
+      # current filter
+      #
+      # @param [TTY::Reader::KeyEvent] event
+      #   the key event
+      #
+      # @api private
       def keypress(event)
         return unless filterable?
 
-        if event.value =~ FILTER_KEYS_MATCHER
-          @filter << event.value
-          @active = 1
-        end
+        return unless event.value =~ FILTER_KEYS_MATCHER
+
+        @filter << event.value
+        @active = 1
       end
 
+      # Handle the delete key by clearing the current filter
+      #
+      # @api private
       def keydelete(*)
         return unless filterable?
 
@@ -364,6 +390,9 @@ module TTY
         @active = 1
       end
 
+      # Handle the backspace key by removing the last filter character
+      #
+      # @api private
       def keybackspace(*)
         return unless filterable?
 
@@ -374,10 +403,43 @@ module TTY
       private
 
       def check_options_consistency(options)
-        if options.key?(:enum) && options.key?(:filter)
-          raise ConfigurationError,
-                "Enumeration can't be used with filter"
-        end
+        return unless options.key?(:enum) && options.key?(:filter)
+
+        raise ConfigurationError,
+              "Enumeration can't be used with filter"
+      end
+
+      # Assign instance variables sourced from the constructor options
+      #
+      # @api private
+      def assign_options(options)
+        @prefix       = options.fetch(:prefix) { @prompt.prefix }
+        @enum         = options.fetch(:enum, nil)
+        @default      = Array(options[:default])
+        @active_color = options.fetch(:active_color) { @prompt.active_color }
+        @help_color   = options.fetch(:help_color) { @prompt.help_color }
+        @cycle        = options.fetch(:cycle, false)
+        @filterable   = options.fetch(:filter, false)
+        @symbols      = @prompt.symbols.merge(options.fetch(:symbols, {}))
+        @quiet        = options.fetch(:quiet) { @prompt.quiet }
+        @help         = options[:help]
+        @show_help    = options.fetch(:show_help, :start)
+        @per_page     = options[:per_page]
+      end
+
+      # Assign instance variables unrelated to the constructor options
+      #
+      # @api private
+      def assign_defaults
+        @choices          = Choices.new
+        @filter           = []
+        @filter_cache     = {}
+        @first_render     = true
+        @done             = false
+        @paginator        = Paginator.new
+        @block_paginator  = BlockPaginator.new
+        @by_page          = false
+        @paging_changed   = false
       end
 
       # Setup default option and active selection
@@ -408,7 +470,8 @@ module TTY
       def validate_defaults
         @default.each do |d|
           msg = if d.nil? || d.to_s.empty?
-                  "default index must be an integer in range (1 - #{choices.size})"
+                  "default index must be an integer in range " \
+                    "(1 - #{choices.size})"
                 elsif d.to_s !~ INTEGER_MATCHER
                   validate_default_name(d)
                 elsif d < 1 || d > choices.size
@@ -502,9 +565,7 @@ module TTY
       def render_question
         header = ["#{@prefix}#{@question} #{render_header}\n"]
         @first_render = false
-        unless @done
-          header << render_menu
-        end
+        header << render_menu unless @done
         header.join
       end
 
@@ -550,7 +611,7 @@ module TTY
           selected_item = choices[@active - 1].name
           @prompt.decorate(selected_item.to_s, @active_color)
         elsif (@first_render && (help_start? || help_always?)) ||
-              (help_always? && !@filter.any?)
+              (help_always? && @filter.none?)
           @prompt.decorate(help, @help_color)
         elsif filterable? && @filter.any?
           @prompt.decorate(filter_help, @help_color)
@@ -567,7 +628,7 @@ module TTY
 
         sync_paginators if @paging_changed
         paginator.paginate(choices, @active, @per_page) do |choice, index|
-          num = enumerate? ? (index + 1).to_s + @enum + " " : ""
+          num = enumerate? ? "#{index + 1}#{@enum} " : ""
           message = if index + 1 == @active && !choice.disabled?
                       selected = "#{@symbols[:marker]} #{num}#{choice.name}"
                       @prompt.decorate(selected.to_s, @active_color)
@@ -578,7 +639,7 @@ module TTY
                       "  #{num}#{choice.name}"
                     end
           end_index = paginated? ? paginator.end_index : choices.size - 1
-          newline = (index == end_index) ? "" : "\n"
+          newline = index == end_index ? "" : "\n"
           output << (message + newline)
         end
 

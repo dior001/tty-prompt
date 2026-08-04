@@ -16,7 +16,7 @@ module TTY
       PAGE_HELP = "(Press tab/right or left to reveal more choices)"
 
       # Checks type of default parameter to be integer
-      INTEGER_MATCHER = /\A[-+]?\d+\Z/.freeze
+      INTEGER_MATCHER = /\A[-+]?\d+\Z/
 
       # Create instance of EnumList menu.
       #
@@ -24,7 +24,7 @@ module TTY
       def initialize(prompt, **options)
         @prompt       = prompt
         @prefix       = options.fetch(:prefix) { @prompt.prefix }
-        @enum         = options.fetch(:enum) { ")" }
+        @enum         = options.fetch(:enum, ")")
         @default      = options.fetch(:default, nil)
         @active_color = options.fetch(:active_color) { @prompt.active_color }
         @help_color   = options.fetch(:help_color)   { @prompt.help_color }
@@ -79,8 +79,13 @@ module TTY
         @per_page = value
       end
 
+      # Number of items to display per page
+      #
+      # @return [Integer]
+      #
+      # @api public
       def page_size
-        (@per_page || Paginator::DEFAULT_PAGE_SIZE)
+        @per_page || Paginator::DEFAULT_PAGE_SIZE
       end
 
       # Check if list is paginated
@@ -92,9 +97,12 @@ module TTY
         @choices.size > page_size
       end
 
+      # Set the help text to display per page
+      #
       # @param [String] text
       #   the help text to display per page
-      # @api pbulic
+      #
+      # @api public
       def page_help(text)
         @page_help = text
       end
@@ -117,11 +125,11 @@ module TTY
       #
       # @api public
       def choice(*value, &block)
-        if block
-          @choices << (value << block)
-        else
-          @choices << value
-        end
+        @choices << if block
+                      (value << block)
+                    else
+                      value
+                    end
       end
 
       # Add multiple choices
@@ -154,6 +162,13 @@ module TTY
         end
       end
 
+      # Handle a numeric key press by appending the digit to the input
+      # buffer, and backspace/delete by removing the last one
+      #
+      # @param [TTY::Reader::KeyEvent] event
+      #   the key event
+      #
+      # @api private
       def keypress(event)
         if %i[backspace delete].include?(event.key.name)
           return if @input.empty?
@@ -166,13 +181,17 @@ module TTY
         end
       end
 
+      # Handle the return/enter key by confirming the entered index or
+      # marking the input as invalid
+      #
+      # @api private
       def keyreturn(*)
         @failure = false
         num = @input.to_i
-        choice_disabled = choices[num - 1] && choices[num - 1].disabled?
-        choice_in_range = num > 0 && num <= @choices.size
+        choice_disabled = choices[num - 1]&.disabled?
+        choice_in_range = num.positive? && num <= @choices.size
 
-        if choice_in_range && !choice_disabled || @input.empty?
+        if (choice_in_range && !choice_disabled) || @input.empty?
           @done = true
         else
           @input = ""
@@ -181,6 +200,10 @@ module TTY
       end
       alias keyenter keyreturn
 
+      # Handle the right arrow or tab key by moving to the next page
+      # of choices
+      #
+      # @api private
       def keyright(*)
         if (@page_active + page_size) <= @choices.size
           @page_active += page_size
@@ -190,6 +213,10 @@ module TTY
       end
       alias keytab keyright
 
+      # Handle the left arrow key by moving to the previous page
+      # of choices
+      #
+      # @api private
       def keyleft(*)
         if (@page_active - page_size) >= 0
           @page_active -= page_size
@@ -208,9 +235,9 @@ module TTY
       def mark_choice_as_active
         next_active = @choices[@input.to_i - 1]
 
-        if next_active && next_active.disabled?
+        if next_active&.disabled?
           # noop
-        elsif (@input.to_i > 0) && next_active
+        elsif @input.to_i.positive? && next_active
           @active = @input.to_i
         else
           @active = @default
@@ -223,12 +250,13 @@ module TTY
       # @api private
       def validate_defaults
         msg = if @default.nil? || @default.to_s.empty?
-                "default index must be an integer in range (1 - #{choices.size})"
+                "default index must be an integer in range " \
+                  "(1 - #{choices.size})"
               elsif @default.to_s !~ INTEGER_MATCHER
                 validate_default_name
               elsif @default < 1 || @default > @choices.size
                 "default index #{@default} out of range (1 - #{@choices.size})"
-              elsif choices[@default - 1] && choices[@default - 1].disabled?
+              elsif choices[@default - 1]&.disabled?
                 "default index #{@default} matches disabled choice item"
               end
 
@@ -277,9 +305,7 @@ module TTY
           question = render_question
           @prompt.print(question)
           @prompt.print(render_error) if @failure
-          if paginated? && !@done
-            @prompt.print(render_page_help)
-          end
+          @prompt.print(render_page_help) if paginated? && !@done
           @prompt.read_keypress
           question_lines = question.split($INPUT_RECORD_SEPARATOR, -1)
           @prompt.print(refresh(question_lines_count(question_lines)))
@@ -340,7 +366,7 @@ module TTY
       # @api private
       def error_message
         error = "Please enter a valid number"
-        "\n" + @prompt.decorate(">>", @error_color) + " " + error
+        "\n#{@prompt.decorate('>>', @error_color)} #{error}"
       end
 
       # Render error message and return cursor to position of input
@@ -350,7 +376,7 @@ module TTY
       # @api private
       def render_error
         error = error_message.dup
-        if !paginated?
+        unless paginated?
           error << @prompt.cursor.prev_line
           error << @prompt.cursor.forward(render_footer.size)
         end
@@ -387,7 +413,7 @@ module TTY
       def page_help_message
         return "" unless paginated?
 
-        "\n" + @prompt.decorate(@page_help, @help_color)
+        "\n#{@prompt.decorate(@page_help, @help_color)}"
       end
 
       # Render page help
@@ -397,9 +423,7 @@ module TTY
       # @api private
       def render_page_help
         help = page_help_message.dup
-        if @failure
-          help << @prompt.cursor.prev_line
-        end
+        help << @prompt.cursor.prev_line if @failure
         help << @prompt.cursor.prev_line
         help << @prompt.cursor.forward(render_footer.size)
       end
@@ -412,14 +436,15 @@ module TTY
       def render_menu
         output = []
 
-        @paginator.paginate(@choices, @page_active, @per_page) do |choice, index|
-          num = (index + 1).to_s + @enum + " "
+        @paginator.paginate(@choices, @page_active,
+                            @per_page) do |choice, index|
+          num = "#{index + 1}#{@enum} "
           selected = num.to_s + choice.name.to_s
           output << if index + 1 == @active && !choice.disabled?
                       (" " * 2) + @prompt.decorate(selected, @active_color)
                     elsif choice.disabled?
-                      @prompt.decorate(@symbols[:cross], :red) + " " +
-                      selected + " " + choice.disabled.to_s
+                      "#{@prompt.decorate(@symbols[:cross],
+                                          :red)} #{selected} #{choice.disabled}"
                     else
                       (" " * 2) + selected
                     end

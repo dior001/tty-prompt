@@ -28,4 +28,11 @@ RSpec.describe TTY::Prompt::Question::Validation, "#call" do
     validation = described_class.new(pattern)
     expect(validation.("piotrmurach")).to eq(false)
   end
+
+  it "fails validation for an unsupported pattern type" do
+    validation = described_class.new(pattern)
+    validation.instance_variable_set(:@pattern, 42)
+
+    expect(validation.("anything")).to eq(false)
+  end
 end

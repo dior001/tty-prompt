@@ -4,6 +4,11 @@ require_relative "question"
 
 module TTY
   class Prompt
+    # A question whose input is echoed back as a masking character
+    # instead of the typed value, e.g. for password prompts. Used by
+    # {Prompt#mask}.
+    #
+    # @api private
     class MaskQuestion < Question
       # Names for delete keys
       DELETE_KEYS = %i[backspace delete].freeze
@@ -34,14 +39,27 @@ module TTY
         @mask = char
       end
 
+      # Handle the return key by finishing the masked input
+      #
+      # @api private
       def keyreturn(_event)
         @done_masked = true
       end
 
+      # Handle the enter key by finishing the masked input
+      #
+      # @api private
       def keyenter(_event)
         @done_masked = true
       end
 
+      # Handle a key press by appending or removing characters from
+      # the masked input buffer
+      #
+      # @param [TTY::Reader::KeyEvent] event
+      #   the key event
+      #
+      # @api private
       def keypress(event)
         if DELETE_KEYS.include?(event.key.name)
           @input.chop! unless @input.empty?
@@ -68,6 +86,12 @@ module TTY
         header.join
       end
 
+      # Handle error condition, tracking failure to color the masked
+      # input accordingly
+      #
+      # @return [String]
+      #
+      # @api private
       def render_error(errors)
         @failure = !errors.empty?
         super

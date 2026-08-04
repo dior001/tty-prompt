@@ -1,0 +1,21 @@
+{
+  "blocked": false,
+  "blocked_reason": null,
+  "dependency_changes": [
+    "tty-reader: ~> 0.8 -> ~> 0.9",
+    "rake: unconstrained -> ~> 13.0",
+    "rspec: >= 3.0 -> ~> 3.13",
+    "benchmark-ips: ~> 2.13.0 -> ~> 2.15",
+    "simplecov: ~> 0.22.0 -> ~> 1.0",
+    "coveralls_reborn: ~> 0.28.0 -> ~> 1.0",
+    "added rubocop ~> 1.88 (dev)",
+    "added bundler-audit ~> 0.9 (dev)",
+    "pastel: ~> 0.8 unchanged, already at latest 0.8.0",
+    "removed dead RUBY_VERSION conditionals from Gemfile (Ruby 2.0/2.7 guards no longer reachable at the new floor)"
+  ],
+  "security_findings": [
+    "bundler-audit check --update against ruby-advisory-db (1229 advisories): no vulnerabilities found for dependency set before or after upgrades"
+  ],
+  "coverage_before": 97.51,
+  "coverage_after": 100.0
+}

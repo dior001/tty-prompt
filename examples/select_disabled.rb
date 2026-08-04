@@ -7,7 +7,7 @@ prompt = TTY::Prompt.new
 warriors = [
   "Scorpion",
   "Kano",
-  { name: "Goro", disabled: "(injury)" },
+  {name: "Goro", disabled: "(injury)"},
   "Jax",
   "Kitana",
   "Raiden"

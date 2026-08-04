@@ -98,15 +98,13 @@ module TTY
 
       # @api private
       def build_single_suggestion
-        single_text + "\n" + (" " * indent) + @suggestions.first
+        "#{single_text}\n#{' ' * indent}#{@suggestions.first}"
       end
 
       # @api private
       def build_multiple_suggestions
-        plural_text + "\n" +
-        @suggestions.map do |sugest|
-          " " * indent + sugest
-        end.join("\n")
+        lines = @suggestions.map { |sugest| "#{' ' * indent}#{sugest}" }
+        "#{plural_text}\n#{lines.join("\n")}"
       end
     end # Suggestion
   end # Prompt

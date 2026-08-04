@@ -4,7 +4,7 @@ RSpec.describe TTY::Prompt::Question::Validation, "#coerce" do
   let(:instance) { described_class.new }
 
   it "coerces lambda into proc" do
-    pattern = -> { "^[^\.]+\.[^\.]+" }
+    pattern = -> { "^[^.]+.[^.]+" }
     validation = described_class.new(pattern)
     expect(validation.pattern).to be_a(Proc)
   end

@@ -5,7 +5,7 @@ module TTY
     class Question
       # A class representing question validation.
       class Validation
-       # Available validator names
+        # Available validator names
         VALIDATORS = {
           email: /^[a-z0-9._%+-]+@([a-z0-9-]+\.)+[a-z]{2,6}$/i
         }.freeze
@@ -55,15 +55,17 @@ module TTY
         #
         # @api public
         def call(input)
-          if pattern.is_a?(String) || pattern.is_a?(Symbol)
+          case pattern
+          when String, Symbol
             VALIDATORS.key?(pattern.to_sym)
             !VALIDATORS[pattern.to_sym].match(input.to_s).nil?
-          elsif pattern.is_a?(Regexp)
+          when Regexp
             !pattern.match(input.to_s).nil?
-          elsif pattern.is_a?(Proc)
-            result = pattern.call(input.to_s)
+          when Proc
+            result = pattern.(input.to_s)
             result.nil? ? false : result
-          else false
+          else
+            false
           end
         end
       end # Validation

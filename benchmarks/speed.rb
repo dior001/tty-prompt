@@ -1,15 +1,14 @@
-# coding: utf-8
+# frozen_string_literal: true
 
-require 'benchmark/ips'
-require 'stringio'
-require_relative '../lib/tty-prompt'
+require "benchmark/ips"
+require "stringio"
+require_relative "../lib/tty-prompt"
 
-input  = ::StringIO.new
-output = ::StringIO.new
-prompt  = TTY::Prompt.new(input: input, output: output)
+input  = StringIO.new
+output = StringIO.new
+prompt = TTY::Prompt.new(input: input, output: output)
 
 Benchmark.ips do |r|
-
   r.report("Ruby #puts") do
     output.puts "What is your name?"
   end

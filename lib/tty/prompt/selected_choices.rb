@@ -32,10 +32,10 @@ module TTY
       # Iterate over selected choices
       #
       # @api public
-      def each(&block)
+      def each(&)
         return to_enum unless block_given?
 
-        @selected.each(&block)
+        @selected.each(&)
       end
 
       # Insert choice at index
@@ -69,8 +69,13 @@ module TTY
         choice
       end
 
-      def find_index_by(&search)
-        (0...@size).bsearch(&search)
+      # Find the index at which the given block first returns true
+      #
+      # @return [Integer, nil]
+      #
+      # @api private
+      def find_index_by(&)
+        (0...@size).bsearch(&)
       end
     end # SelectedChoices
   end # Prompt

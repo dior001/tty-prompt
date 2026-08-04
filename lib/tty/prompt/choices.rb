@@ -48,10 +48,14 @@ module TTY
         reject(&:disabled?)
       end
 
+      # Indexes of choices which are not disabled
+      #
+      # @return [Array[Integer]]
+      #
+      # @api public
       def enabled_indexes
-        each_with_index.reduce([]) do |acc, (choice, idx)|
+        each_with_index.with_object([]) do |(choice, idx), acc|
           acc << idx unless choice.disabled?
-          acc
         end
       end
 
@@ -60,10 +64,10 @@ module TTY
       # @yield [Choice]
       #
       # @api public
-      def each(&block)
+      def each(&)
         return to_enum unless block_given?
 
-        choices.each(&block)
+        choices.each(&)
       end
 
       # Add choice to collection

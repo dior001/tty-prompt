@@ -2,6 +2,11 @@
 
 module TTY
   class Prompt
+    # A DSL for gathering answers to multiple questions into a Hash,
+    # dispatching unknown method calls to the wrapped {Prompt} instance.
+    # Used by {Prompt#collect}.
+    #
+    # @api private
     class AnswersCollector
       # Initialize answer collector
       #
@@ -17,8 +22,8 @@ module TTY
       #   the collection of all answers
       #
       # @api public
-      def call(&block)
-        instance_eval(&block)
+      def call(&)
+        instance_eval(&)
         @answers
       end
 
@@ -31,7 +36,7 @@ module TTY
       def key(name, &block)
         @name = name
         if block
-          answer = create_collector.call(&block)
+          answer = create_collector.(&block)
           add_answer(answer)
         end
         self
@@ -46,7 +51,7 @@ module TTY
       def values(&block)
         @answers[@name] = Array(@answers[@name])
         if block
-          answer = create_collector.call(&block)
+          answer = create_collector.(&block)
           add_answer(answer)
         end
         self
@@ -69,9 +74,19 @@ module TTY
       private
 
       # @api private
-      def method_missing(method, *args, **options, &block)
-        answer = @prompt.public_send(method, *args, **options, &block)
+      def method_missing(method, ...)
+        answer = @prompt.public_send(method, ...)
         add_answer(answer)
+      end
+
+      # Check if this object responds to the prompt's methods dynamically
+      # dispatched through {#method_missing}
+      #
+      # @return [Boolean]
+      #
+      # @api private
+      def respond_to_missing?(method, include_all = false)
+        @prompt.respond_to?(method, include_all) || super
       end
     end # AnswersCollector
   end # Prompt

@@ -5,6 +5,9 @@ require_relative "utils"
 
 module TTY
   class Prompt
+    # A yes/no question used by {Prompt#yes?} and {Prompt#no?}.
+    #
+    # @api private
     class ConfirmQuestion < Question
       # Create confirmation question
       #
@@ -21,14 +24,29 @@ module TTY
         @negative = options.fetch(:negative) { UndefinedSetting }
       end
 
+      # Check if a custom positive label is configured
+      #
+      # @return [Boolean]
+      #
+      # @api public
       def positive?
         @positive != UndefinedSetting
       end
 
+      # Check if a custom negative label is configured
+      #
+      # @return [Boolean]
+      #
+      # @api public
       def negative?
         @negative != UndefinedSetting
       end
 
+      # Check if a custom suffix is configured
+      #
+      # @return [Boolean]
+      #
+      # @api public
       def suffix?
         @suffix != UndefinedSetting
       end
@@ -60,11 +78,18 @@ module TTY
         @negative = value
       end
 
+      # Call the question
+      #
+      # @param [String] message
+      #
+      # @return [Boolean]
+      #
+      # @api public
       def call(message, &block)
         return if Utils.blank?(message)
 
         @message = message
-        block.call(self) if block
+        block&.(self)
         setup_defaults
         render
       end
@@ -76,12 +101,12 @@ module TTY
       # @api private
       def render_question
         header = "#{@prefix}#{message} "
-        if !@done
-          header += @prompt.decorate("(#{@suffix})", @help_color) + " "
-        else
-          answer = conversion.call(@input)
+        if @done
+          answer = conversion.(@input)
           label  = answer ? @positive : @negative
           header += @prompt.decorate(label, @active_color)
+        else
+          header += "#{@prompt.decorate("(#{@suffix})", @help_color)} "
         end
         header << "\n" if @done
         header
@@ -97,7 +122,7 @@ module TTY
         if Utils.blank?(@input)
           @input = default ? positive : negative
         end
-        @evaluator.call(@input)
+        @evaluator.(@input)
       end
 
       # @api private
@@ -122,9 +147,9 @@ module TTY
         converted = Converters.convert(:bool, default.to_s)
         if converted == Const::Undefined
           raise InvalidArgument, "default needs to be `true` or `false`"
-        else
-          default(converted)
         end
+
+        default(converted)
       end
 
       # @api private
@@ -138,15 +163,16 @@ module TTY
 
       # @api private
       def create_suffix
-        (default ? positive.capitalize : positive.downcase) + "/" +
-          (default ? negative.downcase : negative.capitalize)
+        pos = default ? positive.capitalize : positive.downcase
+        neg = default ? negative.downcase : negative.capitalize
+        "#{pos}/#{neg}"
       end
 
       # Create custom conversion
       #
       # @api private
       def conversion
-        ->(input) do
+        lambda do |input|
           positive_word   = Regexp.escape(positive)
           positive_letter = Regexp.escape(positive[0])
           pattern = Regexp.new("^(#{positive_word}|#{positive_letter})$", true)

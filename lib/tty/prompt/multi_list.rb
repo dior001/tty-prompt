@@ -71,7 +71,8 @@ module TTY
       def keyctrl_a(*)
         return if @max && @max < choices.size
 
-        @selected = SelectedChoices.new(choices.enabled, choices.enabled_indexes)
+        @selected = SelectedChoices.new(choices.enabled,
+                                        choices.enabled_indexes)
       end
 
       # Revert currently selected choices when Ctrl+I is pressed
@@ -80,11 +81,12 @@ module TTY
       def keyctrl_r(*)
         return if @max && @max < choices.size
 
-        indexes = choices.each_with_index.reduce([]) do |acc, (choice, idx)|
-                    acc << idx if !choice.disabled? && !@selected.include?(choice)
-                    acc
-                  end
-        @selected = SelectedChoices.new(choices.enabled - @selected.to_a, indexes)
+        enumerator = choices.each_with_index
+        indexes = enumerator.with_object([]) do |(choice, idx), acc|
+          acc << idx if !choice.disabled? && !@selected.include?(choice)
+        end
+        @selected = SelectedChoices.new(choices.enabled - @selected.to_a,
+                                        indexes)
       end
 
       private
@@ -168,7 +170,7 @@ module TTY
         if @done && @echo
           @prompt.decorate(selected_names, @active_color)
         elsif (@first_render && (help_start? || help_always?)) ||
-              (help_always? && !@filter.any? && !@done)
+              (help_always? && @filter.none? && !@done)
           minmax_suffix +
             (print_selected ? "#{selected_names} " : "") +
             instructions
@@ -200,11 +202,12 @@ module TTY
 
         sync_paginators if @paging_changed
         paginator.paginate(choices, @active, @per_page) do |choice, index|
-          num = enumerate? ? (index + 1).to_s + @enum + " " : ""
-          indicator = (index + 1 == @active) ?  @symbols[:marker] : " "
+          num = enumerate? ? "#{index + 1}#{@enum} " : ""
+          indicator = index + 1 == @active ? @symbols[:marker] : " "
           indicator += " "
           message = if @selected.include?(choice) && !choice.disabled?
-                      selected = @prompt.decorate(@symbols[:radio_on], @active_color)
+                      selected = @prompt.decorate(@symbols[:radio_on],
+                                                  @active_color)
                       "#{selected} #{num}#{choice.name}"
                     elsif choice.disabled?
                       @prompt.decorate(@symbols[:cross], :red) +
@@ -213,8 +216,8 @@ module TTY
                       "#{@symbols[:radio_off]} #{num}#{choice.name}"
                     end
           end_index = paginated? ? paginator.end_index : choices.size - 1
-          newline = (index == end_index) ? "" : "\n"
-          output << indicator + message + newline
+          newline = index == end_index ? "" : "\n"
+          output << (indicator + message + newline)
         end
 
         output.join

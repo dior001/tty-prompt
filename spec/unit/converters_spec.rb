@@ -49,7 +49,7 @@ RSpec.describe TTY::Prompt::Converters do
 
   context ":date" do
     {
-      "2020/05/21" => ::Date.parse("2020/05/21"),
+      "2020/05/21" => Date.parse("2020/05/21"),
       "unknown" => TTY::Prompt::Const::Undefined
     }.each do |input, value|
       it "converts #{input.inspect} to #{value.inspect}" do
@@ -60,7 +60,7 @@ RSpec.describe TTY::Prompt::Converters do
 
   context ":datetime" do
     {
-      "2020/05/21 11:12:13" => ::DateTime.parse("2020/05/21 11:12:13"),
+      "2020/05/21 11:12:13" => DateTime.parse("2020/05/21 11:12:13"),
       "unknown" => TTY::Prompt::Const::Undefined
     }.each do |input, value|
       it "converts #{input.inspect} to #{value.inspect}" do
@@ -71,7 +71,7 @@ RSpec.describe TTY::Prompt::Converters do
 
   context ":time" do
     {
-      "11:12:13" => ::Time.parse("11:12:13"),
+      "11:12:13" => Time.parse("11:12:13"),
       "unknown" => TTY::Prompt::Const::Undefined
     }.each do |input, value|
       it "converts #{input.inspect} to #{value.inspect}" do
@@ -137,7 +137,7 @@ RSpec.describe TTY::Prompt::Converters do
 
   context ":path" do
     {
-      "/foo/bar/baz" => ::Pathname.new("/foo/bar/baz")
+      "/foo/bar/baz" => Pathname.new("/foo/bar/baz")
     }.each do |input, value|
       it "converts #{input.inspect} to #{value.inspect}" do
         expect(described_class.convert(:path, input)).to eq(value)
@@ -147,7 +147,7 @@ RSpec.describe TTY::Prompt::Converters do
 
   context ":uri" do
     {
-      "http://foobar.com" => ::URI.parse("http://foobar.com")
+      "http://foobar.com" => URI.parse("http://foobar.com")
     }.each do |input, value|
       it "converts #{input.inspect} to #{value.inspect}" do
         expect(described_class.convert(:uri, input)).to eq(value)

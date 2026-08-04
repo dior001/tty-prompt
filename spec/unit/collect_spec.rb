@@ -3,6 +3,13 @@
 RSpec.describe TTY::Prompt, "#collect" do
   subject(:prompt) { TTY::Prompt::Test.new }
 
+  it "responds to methods delegated to the wrapped prompt" do
+    collector = TTY::Prompt::AnswersCollector.new(prompt)
+
+    expect(collector.respond_to?(:ask)).to eq(true)
+    expect(collector.respond_to?(:not_a_real_method)).to eq(false)
+  end
+
   def collect(&block)
     prompt = subject
     count = 0
@@ -22,7 +29,7 @@ RSpec.describe TTY::Prompt, "#collect" do
     let(:colors) { %w[red blue yellow] }
 
     before do
-      subject.input << "y\r" + colors.join("\ry\r") + "\rn\r"
+      subject.input << ("y\r" + colors.join("\ry\r") + "\rn\r")
       subject.input.rewind
     end
 

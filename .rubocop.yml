@@ -1,5 +1,12 @@
 AllCops:
   NewCops: enable
+  SuggestExtensions: false
+  Exclude:
+    - "benchmarks/**/*"
+    - "examples/**/*"
+
+Gemspec/DevelopmentDependencies:
+  Enabled: false
 
 Layout/BlockAlignment:
   Exclude:
@@ -34,16 +41,30 @@ Metrics/AbcSize:
   Max: 35
   Exclude:
     - "spec/**/*"
+    # Pagination and string-distance algorithms are inherently branchy;
+    # splitting them up would obscure the algorithm rather than clarify it.
+    - "lib/tty/prompt/block_paginator.rb"
+    - "lib/tty/prompt/distance.rb"
+    - "lib/tty/prompt/multi_list.rb"
+    - "lib/tty/prompt/paginator.rb"
+    - "lib/tty/prompt/question.rb"
 
 Metrics/BlockLength:
   CountComments: true
   Max: 25
-  IgnoredMethods: []
+  AllowedMethods: []
   Exclude:
     - "spec/**/*"
+    - "*.gemspec"
 
 Metrics/ClassLength:
   Max: 1500
+
+Metrics/ModuleLength:
+  Exclude:
+    # A single, self-contained table of type converters; splitting it up
+    # would obscure rather than clarify.
+    - "lib/tty/prompt/converters.rb"
 
 Metrics/CyclomaticComplexity:
   Enabled: false
@@ -52,9 +73,31 @@ Metrics/MethodLength:
   Max: 20
   Exclude:
     - "spec/**/*"
+    - "lib/tty/prompt/block_paginator.rb"
+    - "lib/tty/prompt/distance.rb"
+    - "lib/tty/prompt/multi_list.rb"
+    - "lib/tty/prompt/paginator.rb"
+    - "lib/tty/prompt/question.rb"
+
+Metrics/ParameterLists:
+  Exclude:
+    # Prompt#initialize exposes many independent keyword configuration
+    # options as part of its public API; bundling them into an options
+    # object would be a breaking change for a widely used gem.
+    - "lib/tty/prompt.rb"
+
+Metrics/PerceivedComplexity:
+  # Mirrors Metrics/CyclomaticComplexity, disabled above for the same
+  # reason: this gem's rendering logic is inherently branchy.
+  Enabled: false
 
 Naming/BinaryOperatorParameterName:
   Enabled: false
+
+Naming/FileName:
+  Exclude:
+    # Entry point matches the hyphenated gem name, e.g. `require "tty-prompt"`.
+    - "lib/tty-prompt.rb"
 
 Style/AccessorGrouping:
   Enabled: false

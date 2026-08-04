@@ -36,7 +36,7 @@ module TTY
         @format       = options.fetch(:format) { FORMAT }
         @quiet        = options.fetch(:quiet) { @prompt.quiet }
         @help         = options[:help]
-        @show_help    = options.fetch(:show_help) { :start }
+        @show_help    = options.fetch(:show_help, :start)
         @symbols      = @prompt.symbols.merge(options.fetch(:symbols, {}))
         @first_render = true
         @done         = false
@@ -76,8 +76,8 @@ module TTY
       #
       # @api public
       def default_help
-        arrows = @symbols[:arrow_left] + "/" + @symbols[:arrow_right]
-        sprintf(HELP, arrows)
+        arrows = "#{@symbols[:arrow_left]}/#{@symbols[:arrow_right]}"
+        HELP % arrows
       end
 
       # Set help text
@@ -88,7 +88,7 @@ module TTY
       def help(text = (not_set = true))
         return @help if !@help.nil? && not_set
 
-        @help = (@help.nil? && not_set) ? default_help : text
+        @help = @help.nil? && not_set ? default_help : text
       end
 
       # Change when help is displayed
@@ -124,11 +124,11 @@ module TTY
       #
       # @api public
       def choice(*value, &block)
-        if block
-          @choices << (value << block)
-        else
-          @choices << value
-        end
+        @choices << if block
+                      (value << block)
+                    else
+                      value
+                    end
       end
 
       # Add multiple choices
@@ -166,7 +166,7 @@ module TTY
       def call(question, possibilities = nil, &block)
         @question = question
         choices(possibilities) if possibilities
-        block.call(self) if block
+        block&.(self)
         # set up a Choices collection for min, max, step
         # if no possibilities were supplied
         choices((@min..@max).step(@step).to_a) if @choices.empty?
@@ -177,16 +177,28 @@ module TTY
         end
       end
 
+      # Handle the left arrow or down key by decrementing the active
+      # choice
+      #
+      # @api private
       def keyleft(*)
-        @active -= 1 if @active > 0
+        @active -= 1 if @active.positive?
       end
       alias keydown keyleft
 
+      # Handle the right arrow or up key by incrementing the active
+      # choice
+      #
+      # @api private
       def keyright(*)
         @active += 1 if (@active + 1) < choices.size
       end
       alias keyup keyright
 
+      # Handle the enter, return or space key by finishing the slider
+      # selection
+      #
+      # @api private
       def keyreturn(*)
         @done = true
       end
@@ -256,9 +268,9 @@ module TTY
         else
           header << render_slider
         end
-        if @first_render && (help_start? || help_always?) ||
-            (help_always? && !@done)
-          header << "\n" + @prompt.decorate(help, @help_color)
+        if (@first_render && (help_start? || help_always?)) ||
+           (help_always? && !@done)
+          header << "\n#{@prompt.decorate(help, @help_color)}"
           @first_render = false
         end
         header.join
@@ -276,7 +288,7 @@ module TTY
         value = choices[@active].name
         case @format
         when Proc
-          @format.call(slider, value)
+          @format.(slider, value)
         else
           @format.gsub(":slider", slider) % [value]
         end

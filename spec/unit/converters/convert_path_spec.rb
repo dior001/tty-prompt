@@ -9,6 +9,6 @@ RSpec.describe TTY::Prompt::Question, "convert path" do
 
     answer = prompt.ask("File location?", convert: :path)
 
-    expect(answer).to eql(::Pathname.new("/foo/bar/baz"))
+    expect(answer).to eql(Pathname.new("/foo/bar/baz"))
   end
 end

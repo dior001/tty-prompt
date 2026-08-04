@@ -5,6 +5,11 @@ require_relative "timer"
 
 module TTY
   class Prompt
+    # A question answered by a single keypress, optionally bound to a
+    # timeout or a restricted set of accepted keys. Used by
+    # {Prompt#keypress}.
+    #
+    # @api private
     class Keypress < Question
       # Create keypress question
       #
@@ -14,11 +19,11 @@ module TTY
       # @api public
       def initialize(prompt, **options)
         super
-        @echo    = options.fetch(:echo) { false }
+        @echo    = options.fetch(:echo, false)
         @keys    = options.fetch(:keys) { UndefinedSetting }
         @timeout = options.fetch(:timeout) { UndefinedSetting }
         @interval = options.fetch(:interval) {
-          (@timeout != UndefinedSetting && @timeout < 1) ? @timeout : 1
+          @timeout != UndefinedSetting && @timeout < 1 ? @timeout : 1
         }
         @decimals = (@interval.to_s.split(".")[1] || []).size
         @countdown = @timeout
@@ -28,6 +33,14 @@ module TTY
         @prompt.subscribe(self)
       end
 
+      # Get or set the remaining countdown time in seconds
+      #
+      # @param [Numeric] value
+      #   the remaining time to set
+      #
+      # @return [Numeric]
+      #
+      # @api private
       def countdown(value = (not_set = true))
         return @countdown if not_set
 
@@ -44,24 +57,36 @@ module TTY
         @timeout != UndefinedSetting
       end
 
+      # Handle a key press by finishing the question when the pressed
+      # key is accepted
+      #
+      # @param [TTY::Reader::KeyEvent] event
+      #   the key event
+      #
+      # @api private
       def keypress(event)
-        if any_key?
-          @done = true
-        elsif @keys.is_a?(Array) && @keys.include?(event.key.name)
-          @done = true
-        else
-          @done = false
-        end
+        @done = any_key? ||
+                (@keys.is_a?(Array) && @keys.include?(event.key.name))
       end
 
+      # Render question with the :countdown token substituted for the
+      # remaining time
+      #
+      # @return [String]
+      #
+      # @api private
       def render_question
         header = super
-        if timeout?
-          header.gsub!(/:countdown/, format("%.#{@decimals}f", countdown))
-        end
+        header.gsub!(":countdown", "%.#{@decimals}f" % countdown) if timeout?
         header
       end
 
+      # Refresh the question display with the updated countdown time
+      #
+      # @param [Numeric] time
+      #   the remaining time
+      #
+      # @api private
       def interval_handler(time)
         return if @done
 
@@ -73,14 +98,18 @@ module TTY
         @prompt.print(render_question)
       end
 
-      def process_input(question)
+      # Decide how to handle input from user, polling for a keypress
+      # until the timer runs out or the question is done
+      #
+      # @api private
+      def process_input(_question)
         @prompt.print(render_question)
 
         @timer.on_tick do |time|
           interval_handler(time)
         end
 
-        @timer.while_remaining do |remaining|
+        @timer.while_remaining do |_remaining|
           break if @done
 
           @input = @prompt.read_keypress(nonblock: true)
@@ -90,7 +119,15 @@ module TTY
         @evaluator.(@input)
       end
 
-      def refresh(lines, lines_to_clear)
+      # Determine area of the screen to clear
+      #
+      # @param [Integer] lines
+      #   number of lines to clear
+      #
+      # @return [String]
+      #
+      # @api private
+      def refresh(lines, _lines_to_clear)
         @prompt.clear_lines(lines)
       end
     end # Keypress

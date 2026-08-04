@@ -61,8 +61,9 @@ module TTY
       end
       alias fetch []
 
+      # @api public
       def inspect
-        @_registry.inspect
+        @__registry.inspect
       end
     end # ConverterRegistry
   end # Prompt

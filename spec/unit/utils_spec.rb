@@ -1,6 +1,20 @@
 # frozen_string_literal: true
 
 RSpec.describe TTY::Utils do
+  context "#extract_options" do
+    it "extracts the trailing options hash without mutating args" do
+      args = ["foo", {bar: "baz"}]
+      expect(described_class.extract_options(args)).to eq({bar: "baz"})
+      expect(args).to eq(["foo", {bar: "baz"}])
+    end
+
+    it "returns an empty hash when the last argument isn't a hash" do
+      args = %w[foo bar]
+      expect(described_class.extract_options(args)).to eq({})
+      expect(args).to eq(%w[foo bar])
+    end
+  end
+
   context "#blank?" do
     {
       nil => true,

@@ -71,4 +71,12 @@ RSpec.describe TTY::Prompt::ConverterRegistry do
                        "converter :foo is not registered")
     end
   end
+
+  context "inspect" do
+    it "inspects the underlying registry" do
+      registry = described_class.new(foo: :bar)
+
+      expect(registry.inspect).to eq({foo: :bar}.inspect)
+    end
+  end
 end

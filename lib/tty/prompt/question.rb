@@ -37,22 +37,23 @@ module TTY
       def initialize(prompt, **options)
         # Option deprecation
         if options[:validation]
-          warn "[DEPRECATION] The `:validation` option is deprecated. Use `:validate` instead."
+          warn "[DEPRECATION] The `:validation` option is deprecated. " \
+               "Use `:validate` instead."
           options[:validate] = options[:validation]
         end
 
         @prompt       = prompt
         @prefix       = options.fetch(:prefix) { @prompt.prefix }
         @default      = options.fetch(:default) { UndefinedSetting }
-        @required     = options.fetch(:required) { false }
-        @echo         = options.fetch(:echo) { true }
+        @required     = options.fetch(:required, false)
+        @echo         = options.fetch(:echo, true)
         @in           = options.fetch(:in) { UndefinedSetting }
         @modifier     = options.fetch(:modifier) { [] }
         @validation   = options.fetch(:validate) { UndefinedSetting }
         @convert      = options.fetch(:convert) { UndefinedSetting }
         @active_color = options.fetch(:active_color) { @prompt.active_color }
         @help_color   = options.fetch(:help_color) { @prompt.help_color }
-        @error_color  = options.fetch(:error_color) { :red }
+        @error_color  = options.fetch(:error_color, :red)
         @value        = options.fetch(:value) { UndefinedSetting }
         @quiet        = options.fetch(:quiet) { @prompt.quiet }
         @messages     = Utils.deep_copy(options.fetch(:messages) { {} })
@@ -90,7 +91,7 @@ module TTY
       # @api private
       def message_for(name, tokens = nil)
         template = @messages[name]
-        if template && !template.match(/\%\{/).nil?
+        if template && !template.match(/%\{/).nil?
           [template % tokens]
         else
           [template || ""]
@@ -106,7 +107,7 @@ module TTY
       # @api public
       def call(message = "", &block)
         @message = message
-        block.call(self) if block
+        block&.(self)
         @prompt.subscribe(self) do
           render
         end
@@ -144,12 +145,12 @@ module TTY
         if !Utils.blank?(@prefix) || !Utils.blank?(message)
           header << "#{@prefix}#{message} "
         end
-        if !echo?
-          header
-        elsif @done
-          header << @prompt.decorate(@input.to_s, @active_color)
-        elsif default? && !Utils.blank?(@default)
-          header << @prompt.decorate("(#{default})", @help_color) + " "
+        if echo?
+          if @done
+            header << @prompt.decorate(@input.to_s, @active_color)
+          elsif default? && !Utils.blank?(@default)
+            header << "#{@prompt.decorate("(#{default})", @help_color)} "
+          end
         end
         header << "\n" if @done
         header.join
@@ -170,7 +171,7 @@ module TTY
       #
       # @api private
       def read_input(question)
-        options = { echo: echo }
+        options = {echo: echo}
         if value? && @first_render
           options[:value] = @value
           @first_render = false
@@ -184,9 +185,8 @@ module TTY
       #
       # @api private
       def render_error(errors)
-        errors.reduce([]) do |acc, err|
-          acc << @prompt.decorate(">>", :red) + " " + err
-          acc
+        errors.each_with_object([]) do |err, acc|
+          acc << "#{@prompt.decorate('>>', :red)} #{err}"
         end.join("\n")
       end
 
@@ -201,10 +201,9 @@ module TTY
       def refresh(lines, lines_to_clear)
         output = []
         if @done
-          if @errors.count.zero?
+          if @errors.none?
             output << @prompt.cursor.up(lines)
           else
-            lines += @errors.count
             lines_to_clear += @errors.count
           end
         else
@@ -222,7 +221,7 @@ module TTY
         if convert? && !Utils.blank?(value)
           case @convert
           when Proc
-            @convert.call(value)
+            @convert.(value)
           else
             Converters.convert(@convert, value)
           end
@@ -292,7 +291,7 @@ module TTY
       # @api public
       def validate(value = nil, message = nil, &block)
         messages[:valid?] = message if message
-        @validation = (value || block)
+        @validation = value || block
       end
 
       # Prepopulate input with custom content
@@ -311,6 +310,11 @@ module TTY
         @value != UndefinedSetting
       end
 
+      # Check if validation rule is set
+      #
+      # @return [Boolean]
+      #
+      # @api public
       def validation?
         @validation != UndefinedSetting
       end
@@ -352,9 +356,7 @@ module TTY
       # @api public
       def in(value = (not_set = true), message = nil)
         messages[:range?] = message if message
-        if in? && !@in.is_a?(Range)
-          @in = Converters.convert(:range, @in)
-        end
+        @in = Converters.convert(:range, @in) if in? && !@in.is_a?(Range)
         return @in if not_set
 
         @in = Converters.convert(:range, value)

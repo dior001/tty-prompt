@@ -4,13 +4,17 @@ require_relative "paginator"
 
 module TTY
   class Prompt
+    # A paginator that moves through a list of choices one entire page
+    # at a time, rather than scrolling with the active choice.
+    #
+    # @api private
     class BlockPaginator < Paginator
       # Paginate list of choices based on current active choice.
       # Move entire pages.
       #
       # @api public
       def paginate(list, active, per_page = nil, &block)
-        default_size = (list.size <= DEFAULT_PAGE_SIZE ? list.size : DEFAULT_PAGE_SIZE)
+        default_size = [list.size, DEFAULT_PAGE_SIZE].min
         @per_page = @per_page || per_page || default_size
 
         check_page_size!
@@ -19,11 +23,10 @@ module TTY
         if list.size <= @per_page
           @start_index = 0
           @end_index = list.size - 1
-          if block
-            return list.each_with_index(&block)
-          else
-            return list.each_with_index.to_enum
-          end
+          return list.each_with_index(&block) if block
+
+          return list.each_with_index.to_enum
+
         end
 
         unless active.nil? # User may input index out of range
@@ -31,10 +34,10 @@ module TTY
         end
         page  = (@last_index / @per_page.to_f).ceil
         pages = (list.size / @per_page.to_f).ceil
-        if page == 0
+        if page.zero?
           @start_index = 0
           @end_index = @start_index + @per_page - 1
-        elsif page > 0 && page < pages
+        elsif page.positive? && page < pages
           @start_index = (page - 1) * @per_page
           @end_index = @start_index + @per_page - 1
         elsif page == pages

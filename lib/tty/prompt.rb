@@ -80,6 +80,12 @@ module TTY
 
     def_delegators :@output, :print, :puts, :flush
 
+    # Default validation error message templates used across question types
+    #
+    # @return [Hash]
+    #   the mapping of message keys to their default templates
+    #
+    # @api public
     def self.messages
       {
         range?: "Value %{value} must be within the range %{in}",
@@ -135,14 +141,8 @@ module TTY
       @quiet         = quiet
 
       @cursor = TTY::Cursor
-      @pastel = enabled_color.nil? ? Pastel.new : Pastel.new(enabled: enabled_color)
-      @reader = TTY::Reader.new(
-        input: input,
-        output: output,
-        interrupt: interrupt,
-        track_history: track_history,
-        env: env
-      )
+      @pastel = build_pastel(enabled_color)
+      @reader = build_reader(input, output, interrupt, track_history, env)
     end
 
     # Decorate a string with colors
@@ -160,7 +160,7 @@ module TTY
 
       coloring = colors.first
       if coloring.respond_to?(:call)
-        coloring.call(string)
+        coloring.(string)
       else
         @pastel.decorate(string, *colors)
       end
@@ -175,10 +175,10 @@ module TTY
     # @return [String]
     #
     # @api public
-    def invoke_question(object, message, **options, &block)
+    def invoke_question(object, message, **options, &)
       options[:messages] = self.class.messages
       question = object.new(self, **options)
-      question.(message, &block)
+      question.(message, &)
     end
 
     # Ask a question.
@@ -198,8 +198,8 @@ module TTY
     # @return [TTY::Prompt::Question]
     #
     # @api public
-    def ask(message = "", **options, &block)
-      invoke_question(Question, message, **options, &block)
+    def ask(message = "", **, &)
+      invoke_question(Question, message, **, &)
     end
 
     # Ask a question with a keypress answer
@@ -207,8 +207,8 @@ module TTY
     # @see #ask
     #
     # @api public
-    def keypress(message = "", **options, &block)
-      invoke_question(Keypress, message, **options, &block)
+    def keypress(message = "", **, &)
+      invoke_question(Keypress, message, **, &)
     end
 
     # Ask a question with a multiline answer
@@ -219,8 +219,8 @@ module TTY
     # @return [Array[String]]
     #
     # @api public
-    def multiline(message = "", **options, &block)
-      invoke_question(Multiline, message, **options, &block)
+    def multiline(message = "", **, &)
+      invoke_question(Multiline, message, **, &)
     end
 
     # Invoke a list type of prompt
@@ -258,8 +258,8 @@ module TTY
     # @return [TTY::Prompt::MaskQuestion]
     #
     # @api public
-    def mask(message = "", **options, &block)
-      invoke_question(MaskQuestion, message, **options, &block)
+    def mask(message = "", **, &)
+      invoke_question(MaskQuestion, message, **, &)
     end
 
     # Ask a question with a list of options
@@ -282,8 +282,8 @@ module TTY
     #   the choices to select from
     #
     # @api public
-    def select(question, *args, &block)
-      invoke_select(List, question, *args, &block)
+    def select(question, *, &)
+      invoke_select(List, question, *, &)
     end
 
     # Ask a question with multiple attributes activated
@@ -302,8 +302,8 @@ module TTY
     # @return [String]
     #
     # @api public
-    def multi_select(question, *args, &block)
-      invoke_select(MultiList, question, *args, &block)
+    def multi_select(question, *, &)
+      invoke_select(MultiList, question, *, &)
     end
 
     # Ask a question with indexed list
@@ -322,8 +322,8 @@ module TTY
     # @return [String]
     #
     # @api public
-    def enum_select(question, *args, &block)
-      invoke_select(EnumList, question, *args, &block)
+    def enum_select(question, *, &)
+      invoke_select(EnumList, question, *, &)
     end
 
     # A shortcut method to ask the user positive question and return
@@ -337,10 +337,10 @@ module TTY
     # @return [Boolean]
     #
     # @api public
-    def yes?(message, **options, &block)
-      opts = { default: true }.merge(options)
+    def yes?(message, **options, &)
+      opts = {default: true}.merge(options)
       question = ConfirmQuestion.new(self, **opts)
-      question.call(message, &block)
+      question.(message, &)
     end
 
     # A shortcut method to ask the user negative question and return
@@ -354,10 +354,10 @@ module TTY
     # @return [Boolean]
     #
     # @api public
-    def no?(message, **options, &block)
-      opts = { default: false }.merge(options)
+    def no?(message, **options, &)
+      opts = {default: false}.merge(options)
       question = ConfirmQuestion.new(self, **opts)
-      !question.call(message, &block)
+      !question.(message, &)
     end
 
     # Expand available options
@@ -379,8 +379,8 @@ module TTY
     #   the user specified value
     #
     # @api public
-    def expand(message, *args, &block)
-      invoke_select(Expander, message, *args, &block)
+    def expand(message, *, &)
+      invoke_select(Expander, message, *, &)
     end
 
     # Ask a question with a range slider
@@ -399,9 +399,9 @@ module TTY
     # @return [String]
     #
     # @api public
-    def slider(question, choices = nil, **options, &block)
-      slider = Slider.new(self, **options)
-      slider.call(question, choices, &block)
+    def slider(question, choices = nil, **, &)
+      slider = Slider.new(self, **)
+      slider.(question, choices, &)
     end
 
     # Print statement out. If the supplied message ends with a space or
@@ -415,12 +415,12 @@ module TTY
     # @return [String]
     #
     # @api public
-    def say(message = "", **options)
+    def say(message = "", **)
       message = message.to_s
       return if message.empty?
 
-      statement = Statement.new(self, **options)
-      statement.call(message)
+      statement = Statement.new(self, **)
+      statement.(message)
     end
 
     # Print statement(s) out in red green.
@@ -435,7 +435,7 @@ module TTY
     #
     # @api public
     def ok(*args, **options)
-      opts = { color: :green }.merge(options)
+      opts = {color: :green}.merge(options)
       args.each { |message| say(message, **opts) }
     end
 
@@ -451,7 +451,7 @@ module TTY
     #
     # @api public
     def warn(*args, **options)
-      opts = { color: :yellow }.merge(options)
+      opts = {color: :yellow}.merge(options)
       args.each { |message| say(message, **opts) }
     end
 
@@ -467,7 +467,7 @@ module TTY
     #
     # @api public
     def error(*args, **options)
-      opts = { color: :red }.merge(options)
+      opts = {color: :red}.merge(options)
       args.each { |message| say(message, **opts) }
     end
 
@@ -515,8 +515,8 @@ module TTY
     # @return [String]
     #
     # @api public
-    def suggest(message, possibilities, **options)
-      suggestion = Suggestion.new(**options)
+    def suggest(message, possibilities, **)
+      suggestion = Suggestion.new(**)
       say(suggestion.suggest(message, possibilities))
     end
 
@@ -531,9 +531,9 @@ module TTY
     #   the collection of answers
     #
     # @api public
-    def collect(**options, &block)
-      collector = AnswersCollector.new(self, **options)
-      collector.call(&block)
+    def collect(**, &)
+      collector = AnswersCollector.new(self, **)
+      collector.(&)
     end
 
     # Check if outputing to terminal
@@ -572,18 +572,41 @@ module TTY
     #
     # @api public
     def inspect
-      attributes = [
-        :prefix,
-        :quiet,
-        :enabled_color,
-        :active_color,
-        :error_color,
-        :help_color,
-        :input,
-        :output,
+      attributes = %i[
+        prefix
+        quiet
+        enabled_color
+        active_color
+        error_color
+        help_color
+        input
+        output
       ]
       name = self.class.name
-      "#<#{name}#{attributes.map { |attr| " #{attr}=#{send(attr).inspect}" }.join}>"
+      "#<#{name}#{attributes.map { |attr|
+        " #{attr}=#{send(attr).inspect}"
+      }.join}>"
+    end
+
+    private
+
+    # Build a Pastel instance honoring the :enable_color option
+    #
+    # @param [Boolean, nil] enabled_color
+    #
+    # @return [Pastel]
+    #
+    # @api private
+    def build_pastel(enabled_color)
+      enabled_color.nil? ? Pastel.new : Pastel.new(enabled: enabled_color)
+    end
+
+    # Build a TTY::Reader instance for reading user input
+    #
+    # @api private
+    def build_reader(input, output, interrupt, track_history, env)
+      TTY::Reader.new(input: input, output: output, interrupt: interrupt,
+                      track_history: track_history, env: env)
     end
   end # Prompt
 end # TTY

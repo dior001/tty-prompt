@@ -3,6 +3,23 @@
 RSpec.describe TTY::Prompt::Question do
   subject(:prompt) { TTY::Prompt::Test.new }
 
+  it "applies modifier rules" do
+    question = described_class.new(prompt)
+    question.modify(:trim, :upcase)
+
+    result = TTY::Prompt::Question::Checks::CheckModifier.call(question, " name ")
+
+    expect(result).to eq(["NAME"])
+  end
+
+  it "passes value through unchanged when modifier is nil" do
+    question = double(modifier: nil)
+
+    result = TTY::Prompt::Question::Checks::CheckModifier.call(question, "name")
+
+    expect(result).to eq(["name"])
+  end
+
   it "passes range check" do
     question = described_class.new(prompt)
     question.in 1..10
@@ -10,6 +27,13 @@ RSpec.describe TTY::Prompt::Question do
     result = TTY::Prompt::Question::Checks::CheckRange.call(question, 2)
 
     expect(result).to eq([2])
+  end
+
+  it "casts an integer-only value using CheckRange.cast" do
+    range_check = TTY::Prompt::Question::Checks::CheckRange
+    allow(range_check).to receive(:float?).and_return(false)
+
+    expect(range_check.cast("5")).to eq(5)
   end
 
   it "fails range check" do

@@ -31,7 +31,7 @@ RSpec.describe TTY::Prompt, "#select" do
         "  #{num}#{name}"
       end
     end.join("\n")
-    out << "\e[2K\e[1G\e[1A" * choices.count
+    out << ("\e[2K\e[1G\e[1A" * choices.count)
     out << "\e[2K\e[1G"
     out << "\e[1A\e[2K\e[1G" if choices.empty?
     out.join
@@ -202,7 +202,7 @@ RSpec.describe TTY::Prompt, "#select" do
     prompt.input.rewind
     value = prompt.select("What size?", default: 2, enum: ")") do |menu|
               menu.choice :large, 1
-              menu.choice :medium do "Good choice!" end
+              menu.choice(:medium) { "Good choice!" }
               menu.choice :small, 3
             end
 
@@ -355,9 +355,9 @@ RSpec.describe TTY::Prompt, "#select" do
       output_helper("What size?", choices.keys, :large, init: true,
         hint: "Press #{up_down} arrow to move and Enter to select") +
       output_helper("What size?", choices.keys, :medium,
-        hint: "Press #{up_down} arrow to move and Enter to select") +
+                    hint: "Press #{up_down} arrow to move and Enter to select") +
       output_helper("What size?", choices.keys, :small,
-        hint: "Press #{up_down} arrow to move and Enter to select") +
+                    hint: "Press #{up_down} arrow to move and Enter to select") +
       exit_message("What size?", "small")
 
     expect(prompt.output.string).to eq(expected_output)
@@ -669,6 +669,17 @@ RSpec.describe TTY::Prompt, "#select" do
       expect(prompt.output.string).to eq(expected_output)
     end
 
+    it "cycles up to the last choice when at the top" do
+      choices = %w[A B C]
+      prompt.on(:keypress) { |e| prompt.trigger(:keyup) if e.value == "k" }
+      prompt.input << "k" << "\r"
+      prompt.input.rewind
+
+      value = prompt.select("What letter?", choices, cycle: true)
+
+      expect(value).to eq("C")
+    end
+
     it "cycles around disabled items" do
       choices = [
         {name: "A", disabled: "(out)"},
@@ -871,7 +882,7 @@ RSpec.describe TTY::Prompt, "#select" do
       prompt.input.rewind
 
       answer = prompt.select("What size?", %w[Small Medium Large Huge],
-                                          filter: true, show_help: :always)
+                             filter: true, show_help: :always)
       expect(answer).to eql("Huge")
 
       actual_prompt_output = prompt.output.string
@@ -924,7 +935,9 @@ RSpec.describe TTY::Prompt, "#select" do
 
     # This test can't be done in an exact way, at least, with the current framework
     it "doesn't exit when there are no matching entries" do
-      prompt.on(:keypress) { |e| prompt.trigger(:keybackspace) if e.value == "a" }
+      prompt.on(:keypress) do |e|
+        prompt.trigger(:keybackspace) if e.value == "a"
+      end
       prompt.input << "z" << "\r"    # shows no entry, blocking exit
       prompt.input << "a" << "\r"    # triggers Backspace before `a` (see above)
       prompt.input.rewind
@@ -1015,7 +1028,9 @@ RSpec.describe TTY::Prompt, "#select" do
 
     it "doesn't show disabled choice when filtering choices" do
       choices = ["A", "B", {name: "C", disabled: "(unavailable)"}, "D"]
-      prompt.on(:keypress) { |e| prompt.trigger(:keybackspace) if e.value == "a" }
+      prompt.on(:keypress) do |e|
+        prompt.trigger(:keybackspace) if e.value == "a"
+      end
       prompt.input << "c" << "\r" # nothing matches
       prompt.input << "a" << "\r" # backtracks & chooses default option
       prompt.input.rewind
@@ -1078,6 +1093,38 @@ RSpec.describe TTY::Prompt, "#select" do
         prompt.select("What size?", choices, default: 1)
       }.to raise_error(TTY::Prompt::ConfigurationError,
                        "default index `1` matches disabled choice")
+    end
+  end
+
+  context "with :enum option" do
+    it "jumps to the choice matching the typed number" do
+      choices = %w[Small Medium Large]
+      prompt.input << "2" << "\r"
+      prompt.input.rewind
+
+      value = prompt.select("What size?", choices, enum: ")")
+
+      expect(value).to eq("Medium")
+    end
+
+    it "ignores a number outside the choices range" do
+      choices = %w[Small Medium Large]
+      prompt.input << "9" << "\r"
+      prompt.input.rewind
+
+      value = prompt.select("What size?", choices, enum: ")")
+
+      expect(value).to eq("Small")
+    end
+
+    it "ignores a number matching a disabled choice" do
+      choices = [{name: "Small", disabled: "(out)"}, "Medium", "Large"]
+      prompt.input << "1" << "\r"
+      prompt.input.rewind
+
+      value = prompt.select("What size?", choices, enum: ")", default: 2)
+
+      expect(value).to eq("Medium")
     end
   end
 end

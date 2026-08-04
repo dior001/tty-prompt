@@ -38,7 +38,7 @@ RSpec.describe TTY::Prompt do
                 end
       prefix
     end.join("\n")
-    out << "\e[2K\e[1G\e[1A" * choices.count
+    out << ("\e[2K\e[1G\e[1A" * choices.count)
     out << "\e[2K\e[1G"
     out.join
   end
@@ -338,14 +338,14 @@ RSpec.describe TTY::Prompt do
         hint: "Press #{up_down} arrow to move, Space/Ctrl+A|R to select " \
               "(all|rev) and Enter to finish") +
       output_helper("Select drinks?", choices, "beer", [],
-        hint: "Press #{up_down} arrow to move, Space/Ctrl+A|R to select " \
-              "(all|rev) and Enter to finish") +
+                    hint: "Press #{up_down} arrow to move, Space/Ctrl+A|R to select " \
+                          "(all|rev) and Enter to finish") +
       output_helper("Select drinks?", choices, "wine", [],
-        hint: "Press #{up_down} arrow to move, Space/Ctrl+A|R to select " \
-              "(all|rev) and Enter to finish") +
+                    hint: "Press #{up_down} arrow to move, Space/Ctrl+A|R to select " \
+                          "(all|rev) and Enter to finish") +
       output_helper("Select drinks?", choices, "wine", %w[wine],
-        hint: "Press #{up_down} arrow to move, Space/Ctrl+A|R to select " \
-              "(all|rev) and Enter to finish") +
+                    hint: "Press #{up_down} arrow to move, Space/Ctrl+A|R to select " \
+                          "(all|rev) and Enter to finish") +
       exit_message("Select drinks?", %w[wine])
 
     expect(prompt.output.string).to eq(expected_output)
@@ -700,11 +700,11 @@ RSpec.describe TTY::Prompt do
         output_helper("What size?", %w[Tiny Medium Large Huge], "Tiny", %w[], init: true,
           hint: "Press #{up_down} arrow to move, Space/Ctrl+A|R to select (all|rev), Enter to finish and letters to filter") +
         output_helper("What size?", %w[Tiny Medium Large Huge], "Tiny", %w[Tiny],
-          hint: "Press #{up_down} arrow to move, Space/Ctrl+A|R to select (all|rev), Enter to finish and letters to filter") +
+                      hint: "Press #{up_down} arrow to move, Space/Ctrl+A|R to select (all|rev), Enter to finish and letters to filter") +
         output_helper("What size?", %w[Large], "Large", %w[Tiny], hint: "Filter: \"a\"") +
         output_helper("What size?", %w[Large], "Large", %w[Tiny Large], hint: "Filter: \"a\"") +
         output_helper("What size?", %w[Tiny Medium Large Huge], "Tiny", %w[Tiny Large],
-          hint: "Press #{up_down} arrow to move, Space/Ctrl+A|R to select (all|rev), Enter to finish and letters to filter") +
+                      hint: "Press #{up_down} arrow to move, Space/Ctrl+A|R to select (all|rev), Enter to finish and letters to filter") +
         exit_message("What size?", %w[Tiny Large])
 
       expect(prompt.output.string).to eql(expected_output)
@@ -904,5 +904,22 @@ RSpec.describe TTY::Prompt do
 
       expect(prompt.output.string).to eq(expected_output)
     end
+  end
+
+  it "sets min and max number of choices through DSL" do
+    prompt.on(:keypress) { |e| prompt.trigger(:keydown) if e.value == "j" }
+    prompt.input << " " << "j" << " " << "j" << " " << "\r"
+    prompt.input.rewind
+
+    value = prompt.multi_select("What letter?") do |menu|
+      menu.min 1
+      menu.max 2
+
+      menu.choice :A
+      menu.choice :B
+      menu.choice :C
+    end
+
+    expect(value).to eq(%w[A B])
   end
 end

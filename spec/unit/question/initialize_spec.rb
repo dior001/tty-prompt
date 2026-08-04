@@ -9,3 +9,13 @@ RSpec.describe TTY::Prompt::Question, "#initialize" do
 
   it { expect(question.validation).to eq(TTY::Prompt::Question::UndefinedSetting) }
 end
+
+RSpec.describe TTY::Prompt::Question::UndefinedSetting do
+  it "converts to a descriptive string" do
+    expect(described_class.new.to_s).to eq("undefined")
+  end
+
+  it "inspects as a descriptive string" do
+    expect(described_class.new.inspect).to eq("undefined")
+  end
+end

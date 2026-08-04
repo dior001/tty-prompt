@@ -2,6 +2,11 @@
 
 module TTY
   class Prompt
+    # Splits a list of choices into pages and tracks which page is
+    # currently visible as the active choice moves, used by menu-style
+    # prompts such as {List} and {MultiList}.
+    #
+    # @api private
     class Paginator
       DEFAULT_PAGE_SIZE = 6
 
@@ -58,7 +63,7 @@ module TTY
       # @api public
       def paginate(list, active, per_page = nil, &block)
         current_index = active - 1
-        default_size = (list.size <= DEFAULT_PAGE_SIZE ? list.size : DEFAULT_PAGE_SIZE)
+        default_size = [list.size, DEFAULT_PAGE_SIZE].min
         @per_page = @per_page || per_page || default_size
         check_page_size!
         @start_index ||= (current_index / @per_page) * @per_page
@@ -68,11 +73,10 @@ module TTY
         if list.size <= @per_page
           @start_index = 0
           @end_index = list.size - 1
-          if block
-            return list.each_with_index(&block)
-          else
-            return list.each_with_index.to_enum
-          end
+          return list.each_with_index(&block) if block
+
+          return list.each_with_index.to_enum
+
         end
 
         step = (current_index - @last_index).abs
@@ -82,7 +86,7 @@ module TTY
             @start_index = [@start_index + step, last_page].min
           end
         elsif current_index < @last_index # going down
-          if current_index <= @start_index && current_index > 0
+          if current_index <= @start_index && current_index.positive?
             @start_index = [@start_index - step, 0].max
           end
         end

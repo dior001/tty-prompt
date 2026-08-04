@@ -67,6 +67,15 @@ RSpec.describe TTY::Prompt::BlockPaginator, "#paginate" do
     expect(paginator.end_index).to eq(6)
   end
 
+  it "starts on the first page when active index is zero" do
+    list = %w[a b c d e f g]
+    paginator = described_class.new(per_page: 3)
+
+    expect(paginator.paginate(list, 0).to_a).to eq([["a", 0], ["b", 1], ["c", 2]])
+    expect(paginator.start_index).to eq(0)
+    expect(paginator.end_index).to eq(2)
+  end
+
   it "starts with default selection" do
     list = %w[a b c d e f g]
     paginator = described_class.new(per_page: 3, default: 3)

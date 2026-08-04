@@ -62,4 +62,22 @@ RSpec.describe TTY::Prompt::Question, "#keypress" do
 
     expect(prompt.output.string).to include("Press any key or continue in 0.00")
   end
+
+  it "only accepts one of the specified keys" do
+    prompt.input << " "
+    prompt.input.rewind
+
+    answer = prompt.keypress("Press space or enter:", keys: %i[space return])
+
+    expect(answer).to eq(" ")
+  end
+
+  it "ignores keys not in the specified list until a match is pressed" do
+    prompt.input << "ab "
+    prompt.input.rewind
+
+    answer = prompt.keypress("Press space or enter:", keys: %i[space return])
+
+    expect(answer).to eq(" ")
+  end
 end

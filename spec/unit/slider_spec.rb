@@ -11,9 +11,9 @@ RSpec.describe TTY::Prompt, "#slider" do
     out = []
     out << "\e[?25l" if init
     out << prompt << " "
-    out << symbols[:line] * index
+    out << (symbols[:line] * index)
     out << "\e[32m#{symbols[:bullet]}\e[0m"
-    out << symbols[:line] * (choices.size - index - 1)
+    out << (symbols[:line] * (choices.size - index - 1))
     out << " " << active
     out << "\n\e[90m(#{hint})\e[0m" if hint
     out << "\e[2K\e[1G"
@@ -63,9 +63,9 @@ RSpec.describe TTY::Prompt, "#slider" do
     expect(value).to eq(6)
     expect(prompt.output.string).to eq([
       "\e[?25lWhat size? ",
-      symbols[:pipe] + symbols[:line] * 3,
+      symbols[:pipe] + (symbols[:line] * 3),
       "\e[32m#{symbols[:bullet]}\e[0m",
-      "#{symbols[:line] * 7 + symbols[:pipe]} 6%",
+      "#{(symbols[:line] * 7) + symbols[:pipe]} 6%",
       "\n\e[90m(Move with arrows)\e[0m",
       "\e[2K\e[1G\e[1A\e[2K\e[1G",
       "What size? \e[32m6\e[0m\n\e[?25h"
@@ -84,9 +84,9 @@ RSpec.describe TTY::Prompt, "#slider" do
     expect(value).to eq(6)
     expect(prompt.output.string).to eq([
       "\e[?25lWhat size? ",
-      symbols[:pipe] + symbols[:line] * 3,
+      symbols[:pipe] + (symbols[:line] * 3),
       "\e[32m#{symbols[:bullet]}\e[0m",
-      "#{symbols[:line] * 7 + symbols[:pipe]} 6%",
+      "#{(symbols[:line] * 7) + symbols[:pipe]} 6%",
       "\n\e[90m(Use #{left_right} arrow keys, press Enter to select)\e[0m",
       "\e[2K\e[1G\e[1A\e[2K\e[1G",
       "What size? \e[32m6\e[0m\n\e[?25h"
@@ -114,9 +114,7 @@ RSpec.describe TTY::Prompt, "#slider" do
     prompt.input << "l\r"
     prompt.input.rewind
     prompt.on(:keypress) do |event|
-      if event.value = "l"
-        prompt.trigger(:keyright)
-      end
+      prompt.trigger(:keyright) if event.value == "l"
     end
     res = prompt.slider("What size?", min: 0, max: 10, step: 1, default: 10)
     expect(res).to eq(10)
@@ -195,9 +193,9 @@ RSpec.describe TTY::Prompt, "#slider" do
     expect(value).to eq(6)
     expect(prompt.output.string).to eq([
       "\e[?25lWhat size? ",
-      symbols[:pipe] + symbols[:line] * 3,
+      symbols[:pipe] + (symbols[:line] * 3),
       "\e[32m#{symbols[:bullet]}\e[0m",
-      "#{symbols[:line] * 7 + symbols[:pipe]} 6%",
+      "#{(symbols[:line] * 7) + symbols[:pipe]} 6%",
       "\n\e[90m(Use #{left_right} arrow keys, press Enter to select)\e[0m",
       "\e[2K\e[1G\e[1A\e[2K\e[1G",
       "\e[?25h"
@@ -394,7 +392,7 @@ RSpec.describe TTY::Prompt, "#slider" do
 
     res = prompt.slider("What letter?") do |range|
                           range.choice "a", 1
-                          range.choice "b" do "NOT THE BEEEEEEEES!" end
+                          range.choice("b") { "NOT THE BEEEEEEEES!" }
                           range.choice "c", 3
                         end
 

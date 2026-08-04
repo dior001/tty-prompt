@@ -272,7 +272,7 @@ RSpec.describe TTY::Prompt, "#expand" do
     prompt.input.rewind
 
     result = prompt.expand("Overwrite Gemfile?") do |q|
-      q.choice key: "y", name: "Overwrite"      do :ok end
+      q.choice(key: "y", name: "Overwrite") { :ok }
       q.choice key: "n", name: "Skip",          value: :no
       q.choice key: "a", name: "Overwrite all", value: :all
       q.choice key: "d", name: "Show diff",     value: :diff
@@ -288,6 +288,14 @@ RSpec.describe TTY::Prompt, "#expand" do
     ].join
 
     expect(prompt.output.string).to eq(expected_output)
+  end
+
+  it "resets input and waits for a valid key after an unknown key" do
+    prompt.input << "z\n" << "y\n"
+    prompt.input.rewind
+
+    result = prompt.expand("Overwrite Gemfile?", choices)
+    expect(result).to eq(:yes)
   end
 
   it "fails to expand due to lack of key attribute" do

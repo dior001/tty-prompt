@@ -2,30 +2,39 @@
 
 module TTY
   class Prompt
-    Error = Class.new(StandardError)
+    class Error < StandardError
+    end
 
     # Raised when wrong parameter is used to configure prompt
-    ConfigurationError = Class.new(Error)
+    class ConfigurationError < Error
+    end
 
     # Raised when type conversion cannot be performed
-    ConversionError = Class.new(Error)
+    class ConversionError < Error
+    end
 
     # Raised when the passed in validation argument is of wrong type
-    ValidationCoercion = Class.new(Error)
+    class ValidationCoercion < Error
+    end
 
     # Raised when the required argument is not supplied
-    ArgumentRequired = Class.new(Error)
+    class ArgumentRequired < Error
+    end
 
     # Raised when the argument validation fails
-    ArgumentValidation = Class.new(Error)
+    class ArgumentValidation < Error
+    end
 
     # Raised when the argument is not expected
-    InvalidArgument = Class.new(Error)
+    class InvalidArgument < Error
+    end
 
     # Raised when overriding already defined conversion
-    ConversionAlreadyDefined = Class.new(Error)
+    class ConversionAlreadyDefined < Error
+    end
 
     # Raised when conversion type isn't registered
-    UnsupportedConversion = Class.new(Error)
+    class UnsupportedConversion < Error
+    end
   end # Prompt
 end # TTY

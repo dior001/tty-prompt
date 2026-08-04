@@ -29,6 +29,15 @@ RSpec.describe TTY::Prompt, "#mask" do
     ].join)
   end
 
+  it "removes the last character when backspace is pressed" do
+    prompt.input << "pass" << "\u007F" << "\r"
+    prompt.input.rewind
+
+    answer = prompt.mask("What is your password?")
+
+    expect(answer).to eql("pas")
+  end
+
   it "masks output with custom character" do
     prompt.input << "pass\r"
     prompt.input.rewind
