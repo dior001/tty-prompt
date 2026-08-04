@@ -5,12 +5,12 @@ RSpec.describe TTY::Prompt::Question::Validation, "#call" do
 
   it "validates nil input" do
     validation = described_class.new(pattern)
-    expect(validation.(nil)).to eq(false)
+    expect(validation.call(nil)).to eq(false)
   end
 
   it "validates successfully when the value matches pattern" do
     validation = described_class.new(pattern)
-    expect(validation.("piotr.murach")).to eq(true)
+    expect(validation.call("piotr.murach")).to eq(true)
   end
 
   it "validates with a proc" do
@@ -26,13 +26,13 @@ RSpec.describe TTY::Prompt::Question::Validation, "#call" do
 
   it "fails validation when not maching pattern" do
     validation = described_class.new(pattern)
-    expect(validation.("piotrmurach")).to eq(false)
+    expect(validation.call("piotrmurach")).to eq(false)
   end
 
   it "fails validation for an unsupported pattern type" do
     validation = described_class.new(pattern)
     validation.instance_variable_set(:@pattern, 42)
 
-    expect(validation.("anything")).to eq(false)
+    expect(validation.call("anything")).to eq(false)
   end
 end

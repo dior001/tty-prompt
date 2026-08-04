@@ -251,6 +251,14 @@ Notable non-mechanical decisions baked into `.rubocop.yml`:
   value is unchanged. Re-verified with `bundle exec rubocop` (117 files,
   no offenses) and the full suite (538 examples, 0 failures, 100%
   coverage).
+- **Review fix:** `spec/unit/question/validation/call_spec.rb:36` was
+  flagged for `Style/LambdaCall` (prefer `lambda.call(...)` over
+  `lambda.(...)`). The `.()` shorthand is ordinary syntax supported since
+  long before this gem's `>= 3.2.0` floor, so this was a pure style fix
+  with no compatibility angle: replaced all four `.()` call sites in that
+  file with explicit `.call(...)`. Re-verified with `bundle exec rubocop`
+  (117 files, no offenses) and the full suite (538 examples, 0 failures,
+  100% coverage).
 
 ## 6. Security
 
