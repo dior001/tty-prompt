@@ -7,5 +7,7 @@ prompt = TTY::Prompt.new
 pastel = Pastel.new
 notice = pastel.cyan.bold.detach
 
-prompt.ask("What is your name?", default: ENV.fetch("USER", nil), active_color: notice,
-                                 help_color: notice)
+prompt.ask("What is your name?",
+           default: ENV.fetch("USER", nil),
+           active_color: notice,
+           help_color: notice)

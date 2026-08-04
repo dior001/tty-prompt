@@ -230,6 +230,16 @@ Notable non-mechanical decisions baked into `.rubocop.yml`:
   (renamed to `AllowedMethods` by RuboCop upstream) and added
   `AllCops: SuggestExtensions: false` to quiet the `rubocop-rake`/
   `rubocop-rspec` upsell notices.
+- **Review fix:** `examples/ask.rb:10` was flagged for
+  `Layout/LineLength` (87/80). `examples/**/*` is excluded from the
+  project's own `bundle exec rubocop` run (see above), so this didn't
+  show up in CI lint — but a reviewer's editor/tooling checks the file
+  directly regardless of that exclude, which is standard RuboCop
+  behavior for an explicitly-targeted path. Reformatted the
+  `prompt.ask(...)` call's keyword arguments one per line so every line
+  is within 80 columns; re-verified with
+  `bundle exec rubocop examples/ask.rb` (no offenses) and the full suite
+  (538 examples, 0 failures, 100% coverage).
 
 ## 6. Security
 
